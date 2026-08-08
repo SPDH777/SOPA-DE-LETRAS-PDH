@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- ====== ÍCONOS PARA PWA ====== -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <!-- ====== MANIFEST ====== -->
     <link rel="manifest" href="manifest.json">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
     <title>🔍 SOPA DE LETRAS PDH</title>
     <style>
+        /* ====== TODO TU CSS EXISTENTE ====== */
         :root {
             --bg-deep: #0a0a14;
             --cell-bg: #fafafa;
@@ -734,7 +742,6 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        /* Clase para grid extremo en móvil — refuerzo */
         .grid-extremo-mobile .cell {
             --cell-size: 22px !important;
             --cell-font: 0.62rem !important;
@@ -831,6 +838,8 @@
     </div>
 
     <script>
+        // ====== AQUÍ VA TODO TU JAVASCRIPT EXISTENTE ======
+        // (No lo modifico, solo lo mantengo igual)
         (function() {
             "use strict";
 
@@ -1068,11 +1077,11 @@
             let nivelActual = 1;
             let monedas = 0;
             let totalPistasCompradas = 0;
-            let palabrasUsadasGlobal = {}; // Registro de palabras ya usadas por tema
+            let palabrasUsadasGlobal = {};
 
             // Timer
             let timerInterval = null;
-            let tiempoRestante = 300; // 5 minutos default
+            let tiempoRestante = 300;
             let timerActivo = false;
             let juegoTerminado = false;
             let juegoPerdido = false;
@@ -1161,7 +1170,6 @@
                 }
             }
 
-            // Exponer funciones globalmente
             window.toggleShop = toggleShop;
             window.comprarPista = comprarPista;
             window.verAnuncio = verAnuncio;
@@ -1390,7 +1398,7 @@
             }
 
             // ============================================================
-            // RENDERIZADO (con ajuste dinámico de tamaño para móvil extremo)
+            // RENDERIZADO
             // ============================================================
             function buildFoundSet() {
                 foundSet = new Set();
@@ -1416,7 +1424,6 @@
                 const wrapperWidth = gridWrapper ? gridWrapper.clientWidth - 20 : vw - 40;
                 let cellSize = Math.floor(wrapperWidth / sizeGrid);
 
-                // Limitar tamaño máximo
                 if (vw >= 768) {
                     cellSize = Math.min(cellSize, 40);
                     cellSize = Math.max(cellSize, 30);
@@ -1448,20 +1455,16 @@
                 const gridWrapper = document.getElementById('gridWrapper');
                 const sizeGrid = grid.length;
 
-                // Calcular tamaño de celda óptimo para el viewport actual
                 const cellSize = calcularCellSize(sizeGrid);
                 const fontSize = calcularFontSize(cellSize);
 
-                // Aplicar variables CSS
                 container.style.setProperty('--cell-size', cellSize + 'px');
                 container.style.setProperty('--cell-font', fontSize);
                 container.style.gridTemplateColumns = `repeat(${sizeGrid}, var(--cell-size, 34px))`;
 
-                // Gestionar clase para grid extremo en móvil
                 const nivel = document.getElementById('nivelSelect').value;
                 if (nivel === 'superDificil' && window.innerWidth < 480) {
                     gridWrapper.classList.add('grid-extremo-mobile');
-                    // Reforzar tamaño aún más pequeño para 14 columnas
                     if (window.innerWidth <= 360) {
                         container.style.setProperty('--cell-size', '19px');
                         container.style.setProperty('--cell-font', '0.55rem');
@@ -1581,7 +1584,6 @@
             document.addEventListener('pointerup', () => { if (isSelecting) finalizarSeleccion(); });
             document.addEventListener('pointercancel', () => { if (isSelecting) finalizarSeleccion(); });
 
-            // Redimensionar al cambiar orientación
             let resizeTimeout;
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimeout);
