@@ -1,1950 +1,922 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- ====== ÍCONOS PARA PWA ====== -->
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-    <link rel="apple-touch-icon" href="icon-192.png">
-
-    <!-- ====== MANIFEST ====== -->
-    <link rel="manifest" href="manifest.json">
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
-    <title>🔍 SOPA DE LETRAS PDH</title>
-    <style>
-        /* ====== TODO TU CSS EXISTENTE ====== */
-        :root {
-            --bg-deep: #0a0a14;
-            --cell-bg: #fafafa;
-            --cell-bg-alt: #f0f0f0;
-            --cell-selected: #5b6ef5;
-            --cell-found: #38a169;
-            --gold: #f6ad55;
-            --text-dim: rgba(255, 255, 255, 0.65);
-            --text-bright: rgba(255, 255, 255, 0.92);
-            --text-cell: #1a1a1a;
-            --cell-border: #d5d8dc;
-            --shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.7);
-            --radius-card: 20px;
-            --radius-cell: 8px;
-            --transition-fast: 0.05s ease;
-            --transition-smooth: 0.2s ease;
-            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-            --cell-size: 34px;
-            --cell-font: 1rem;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
-        }
-
-        body {
-            min-height: 100vh;
-            min-height: 100dvh;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            background: radial-gradient(ellipse at 30% 20%, #1a1a3a 0%, #0c0c1d 60%, #050510 100%);
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            padding: 8px;
-            padding-bottom: calc(8px + var(--safe-area-bottom));
-            overflow-x: hidden;
-            overflow-y: auto;
-            position: relative;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .watermark-top {
-            position: fixed;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            pointer-events: none;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.18), rgba(118, 75, 162, 0.18));
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 6px 16px;
-            border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            text-align: center;
-            white-space: nowrap;
-        }
-
-        .watermark-top .texto-creador {
-            font-size: 0.8rem;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            background: linear-gradient(135deg, #f0c060, #f5576c, #f093fb, #f0c060);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradienteTop 4s ease infinite;
-        }
-
-        .watermark-top .texto-creador .nombre {
-            font-size: 0.95rem;
-            letter-spacing: 2px;
-            background: linear-gradient(135deg, #ffffff, #f0c060, #ffffff);
-            background-size: 200% 200%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: brilloNombre 3s ease infinite;
-        }
-
-        @keyframes gradienteTop {
-            0%,
-            100% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-        }
-        @keyframes brilloNombre {
-            0%,
-            100% {
-                background-position: 0% 50%;
-                filter: brightness(1);
-            }
-            50% {
-                background-position: 100% 50%;
-                filter: brightness(1.4);
-            }
-        }
-
-        .watermark-central {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-25deg) scale(1.5);
-            font-size: 4rem;
-            font-weight: 900;
-            color: rgba(102, 126, 234, 0.03);
-            z-index: 0;
-            pointer-events: none;
-            letter-spacing: 8px;
-            text-transform: uppercase;
-            font-family: 'Arial Black', sans-serif;
-            width: 100%;
-            text-align: center;
-            animation: watermarkPulse 6s ease-in-out infinite;
-            white-space: nowrap;
-        }
-
-        @keyframes watermarkPulse {
-            0%,
-            100% {
-                opacity: 0.5;
-                transform: translate(-50%, -50%) rotate(-25deg) scale(1.5);
-            }
-            50% {
-                opacity: 0.8;
-                transform: translate(-50%, -50%) rotate(-23deg) scale(1.6);
-            }
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            padding: 14px 10px 16px;
-            border-radius: var(--radius-card);
-            max-width: 600px;
-            width: 100%;
-            box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            position: relative;
-            z-index: 1;
-            margin-top: 60px;
-            margin-bottom: 15px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 6px;
-            position: relative;
-            z-index: 2;
-        }
-        .header h1 {
-            font-size: 1.6rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb, #667eea);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradienteText 4s ease infinite;
-            letter-spacing: 1.5px;
-        }
-        .header h1 .pdh {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 1.8rem;
-        }
-        @keyframes gradienteText {
-            0%,
-            100% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-        }
-        .header .subtitle {
-            color: rgba(255, 255, 255, 0.35);
-            font-size: 0.65rem;
-            margin-top: 2px;
-            letter-spacing: 2px;
-        }
-
-        .level-indicator {
-            text-align: center;
-            color: var(--gold);
-            font-weight: 700;
-            font-size: 0.85rem;
-            margin: 4px 0;
-        }
-
-        .coins-display {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-            margin: 4px 0;
-            padding: 5px 10px;
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 20px;
-            font-weight: 700;
-            color: #ffd700;
-            font-size: 0.8rem;
-        }
-        .coins-display button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.1rem;
-            padding: 2px;
-        }
-
-        .top-controls {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin: 6px 0;
-            position: relative;
-            z-index: 2;
-        }
-        .top-controls select,
-        .top-controls button,
-        .top-controls label {
-            padding: 7px 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.72rem;
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.8);
-            cursor: pointer;
-            transition: all var(--transition-smooth);
-            outline: none;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            max-width: 100%;
-        }
-        .top-controls select option {
-            background: #1a1a2e;
-            color: white;
-        }
-        .top-controls .btn-play {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-        }
-        .top-controls .btn-play:active {
-            transform: scale(0.95);
-        }
-        .top-controls label {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-        .top-controls input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: #667eea;
-        }
-
-        .timer-display {
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #ff6b6b;
-            margin: 4px 0;
-            display: none;
-        }
-        .timer-display.active {
-            display: block;
-        }
-        .timer-display.warning {
-            animation: blink 0.5s ease infinite;
-        }
-        @keyframes blink {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-        }
-
-        .grid-wrapper {
-            margin: 4px auto;
-            position: relative;
-            z-index: 2;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            overflow: hidden;
-            background: #ffffff;
-            border-radius: 12px;
-            padding: 6px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e0e3e7;
-        }
-        .grid-container {
-            display: grid;
-            gap: 2px;
-            margin: 0 auto;
-            justify-content: center;
-            max-width: 100%;
-            padding: 4px;
-            background: #ffffff;
-            border-radius: 10px;
-            border: 1px solid #e8eaed;
-            touch-action: none;
-            will-change: transform;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-        }
-
-        .cell {
-            width: var(--cell-size, 34px);
-            height: var(--cell-size, 34px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #fafbfc;
-            border-radius: var(--radius-cell);
-            font-size: var(--cell-font, 1rem);
-            font-weight: 700;
-            color: #1a1a1a;
-            cursor: pointer;
-            transition: background 0.03s ease, transform 0.03s ease;
-            border: 1px solid #d5d8dc;
-            text-shadow: none;
-            position: relative;
-            touch-action: none;
-            will-change: transform, background;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-        }
-        .cell:active {
-            transform: scale(0.92);
-        }
-        .cell.selected {
-            background: linear-gradient(135deg, #5b6ef5, #7c3aed);
-            color: white;
-            border-color: rgba(139, 92, 246, 0.5);
-            transform: scale(1.05);
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.35);
-            z-index: 5;
-        }
-        .cell.found {
-            background: linear-gradient(135deg, #48bb78, #38a169);
-            color: white;
-            border-color: rgba(72, 187, 120, 0.4);
-            transform: scale(1.03);
-            box-shadow: 0 4px 20px rgba(72, 187, 120, 0.25);
-        }
-        .cell.found::after {
-            content: '✓';
-            position: absolute;
-            font-size: 0.5rem;
-            top: -2px;
-            right: -2px;
-            background: rgba(72, 187, 120, 0.9);
-            border-radius: 50%;
-            width: 13px;
-            height: 13px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            color: white;
-        }
-        .cell.hint {
-            background: linear-gradient(135deg, #f6ad55, #ed8936) !important;
-            color: white !important;
-            border-color: #ed8936 !important;
-            transform: scale(1.08) !important;
-            box-shadow: 0 0 25px rgba(246, 173, 85, 0.6) !important;
-            animation: hintPulse 0.35s ease 3;
-            z-index: 10;
-        }
-        @keyframes hintPulse {
-            0%,
-            100% {
-                box-shadow: 0 0 25px rgba(246, 173, 85, 0.6);
-            }
-            50% {
-                box-shadow: 0 0 50px rgba(246, 173, 85, 0.9);
-            }
-        }
-
-        .word-list {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 4px;
-            margin: 4px 0;
-            padding: 6px 8px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 10px;
-            min-height: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            position: relative;
-            z-index: 2;
-        }
-        .word-item {
-            padding: 3px 8px;
-            border-radius: 14px;
-            font-weight: 600;
-            font-size: 0.68rem;
-            background: rgba(255, 255, 255, 0.04);
-            color: var(--text-dim);
-            transition: all 0.2s ease;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-        }
-        .word-item.found-word {
-            background: linear-gradient(135deg, rgba(72, 187, 120, 0.2), rgba(56, 161, 105, 0.15));
-            color: #48bb78;
-            border-color: rgba(72, 187, 120, 0.3);
-            text-decoration: line-through;
-        }
-
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 8px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 10px;
-            font-weight: 600;
-            color: var(--text-dim);
-            margin-top: 4px;
-            flex-wrap: wrap;
-            gap: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            position: relative;
-            z-index: 2;
-            font-size: 0.72rem;
-        }
-        .stats .btn-reset,
-        .stats .btn-hint,
-        .stats .btn-next {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all var(--transition-smooth);
-            font-size: 0.7rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-        }
-        .stats .btn-reset {
-            background: rgba(252, 129, 129, 0.3);
-            color: rgba(255, 255, 255, 0.85);
-        }
-        .stats .btn-hint {
-            background: rgba(246, 173, 85, 0.3);
-            color: rgba(255, 255, 255, 0.85);
-        }
-        .stats .btn-next {
-            background: rgba(72, 187, 120, 0.3);
-            color: #48bb78;
-            display: none;
-        }
-        .stats .btn-next.show {
-            display: inline-block;
-            animation: pulseBtn 1s ease infinite;
-        }
-        @keyframes pulseBtn {
-            0%,
-            100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-        }
-        .stats .btn-hint:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .message {
-            text-align: center;
-            font-size: 0.75rem;
-            font-weight: 600;
-            min-height: 24px;
-            padding: 5px;
-            border-radius: 8px;
-            margin: 3px 0;
-            background: rgba(255, 255, 255, 0.02);
-            color: var(--text-dim);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.02);
-            position: relative;
-            z-index: 2;
-        }
-        .message.success {
-            color: #48bb78;
-            background: rgba(72, 187, 120, 0.06);
-        }
-        .message.info {
-            color: rgba(102, 126, 234, 0.8);
-        }
-        .message.warning {
-            color: #f6ad55;
-        }
-        .message.win {
-            color: #f6ad55;
-            background: rgba(246, 173, 85, 0.08);
-            border-color: rgba(246, 173, 85, 0.08);
-            animation: winGlow 2s ease infinite;
-        }
-        .message.lose {
-            color: #fc8181;
-            background: rgba(252, 129, 129, 0.08);
-            border-color: rgba(252, 129, 129, 0.08);
-        }
-        @keyframes winGlow {
-            0%,
-            100% {
-                box-shadow: 0 0 20px rgba(246, 173, 85, 0.08);
-            }
-            50% {
-                box-shadow: 0 0 40px rgba(246, 173, 85, 0.15);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 10px 6px 12px;
-                margin-top: 50px;
-            }
-            .cell {
-                --cell-size: 28px;
-                --cell-font: 0.78rem;
-                border-radius: 6px;
-            }
-            .grid-container {
-                gap: 2px;
-                padding: 3px;
-            }
-            .grid-wrapper {
-                padding: 4px;
-                border-radius: 10px;
-            }
-            .top-controls select,
-            .top-controls button,
-            .top-controls label {
-                padding: 5px 7px;
-                font-size: 0.62rem;
-            }
-            .word-item {
-                font-size: 0.58rem;
-                padding: 2px 6px;
-            }
-            .stats {
-                font-size: 0.62rem;
-                padding: 4px 6px;
-            }
-            .watermark-top {
-                padding: 4px 10px;
-                top: 4px;
-            }
-            .watermark-top .texto-creador {
-                font-size: 0.6rem;
-            }
-            .watermark-top .texto-creador .nombre {
-                font-size: 0.7rem;
-            }
-        }
-        @media (max-width: 380px) {
-            .cell {
-                --cell-size: 24px;
-                --cell-font: 0.68rem;
-                border-radius: 5px;
-            }
-            .grid-container {
-                gap: 1px;
-                padding: 2px;
-            }
-            .grid-wrapper {
-                padding: 3px;
-                border-radius: 8px;
-            }
-            .header h1 {
-                font-size: 1.1rem;
-            }
-            .header h1 .pdh {
-                font-size: 1.3rem;
-            }
-        }
-        @media (max-width: 340px) {
-            .cell {
-                --cell-size: 20px;
-                --cell-font: 0.58rem;
-                border-radius: 4px;
-            }
-            .grid-container {
-                gap: 1px;
-                padding: 1px;
-            }
-            .grid-wrapper {
-                padding: 2px;
-            }
-        }
-        @media (min-width: 768px) {
-            .container {
-                padding: 18px 20px;
-                border-radius: 22px;
-            }
-            .cell {
-                --cell-size: 40px;
-                --cell-font: 1.1rem;
-            }
-            .grid-container {
-                gap: 3px;
-            }
-        }
-
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            overflow: hidden;
-        }
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: rgba(102, 126, 234, 0.2);
-            border-radius: 50%;
-            animation: floatParticle 20s infinite linear;
-        }
-        @keyframes floatParticle {
-            0% {
-                transform: translateY(105vh) translateX(0) scale(0);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-10vh) translateX(40px) scale(1);
-                opacity: 0;
-            }
-        }
-
-        .shop-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 200;
-            justify-content: center;
-            align-items: center;
-        }
-        .shop-modal.active {
-            display: flex;
-        }
-        .shop-content {
-            background: #1a1a2e;
-            padding: 20px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            color: white;
-            max-width: 320px;
-            width: 90%;
-        }
-        .shop-content h3 {
-            margin-bottom: 12px;
-            color: #ffd700;
-        }
-        .shop-content p {
-            margin: 8px 0;
-            font-size: 0.9rem;
-        }
-        .shop-content button {
-            padding: 10px 18px;
-            margin: 6px;
-            border-radius: 10px;
-            border: none;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 0.85rem;
-            width: 100%;
-            color: white;
-        }
-        .shop-content .btn-buy {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-        }
-        .shop-content .btn-ad {
-            background: linear-gradient(135deg, #f6ad55, #ed8936);
-        }
-        .shop-content .btn-close {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .grid-extremo-mobile .cell {
-            --cell-size: 22px !important;
-            --cell-font: 0.62rem !important;
-            border-radius: 4px;
-        }
-        @media (max-width: 360px) {
-            .grid-extremo-mobile .cell {
-                --cell-size: 19px !important;
-                --cell-font: 0.55rem !important;
-                border-radius: 3px;
-            }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14182e">
+<title>Sopa de Letras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,500;1,600;1,700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{--tx:#f6f0e6;--mu:#c1bccb;--ln:rgba(255,255,255,.17);--gl:rgba(14,18,36,.6);--g2:rgba(255,255,255,.08);--c:rgb(242,184,114);--gd:#f2c879;--f:"Playfair Display",Georgia,serif;--s:"Playfair Display",Georgia,serif;--nf:"Nunito","Segoe UI",system-ui,sans-serif;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#14182e}
+body{font-family:var(--f);font-style:italic;font-weight:500;color:var(--tx);overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:disabled{opacity:.5;cursor:default}
+canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#bg{z-index:0}#fx{z-index:60}
+.scr{display:none;position:relative;z-index:1;min-height:100%;padding:16px;flex-direction:column;align-items:center}
+.scr.on{display:flex;animation:in .5s ease}
+@keyframes in{from{opacity:0}}
+@keyframes shk{20%{transform:translateX(-6px)}50%{transform:translateX(5px)}80%{transform:translateX(-3px)}}
+.shk{animation:shk .3s}
+.logo{font-family:var(--s);font-size:clamp(44px,13vw,76px);font-weight:600;letter-spacing:.03em;line-height:1;text-shadow:0 2px 26px rgba(0,0,0,.4)}
+.logo.sm{font-size:clamp(34px,10vw,48px)}
+.sub{font-size:16px;margin-top:8px;color:var(--tx);opacity:.88;text-shadow:0 1px 12px rgba(0,0,0,.5)}
+#splash{justify-content:center;text-align:center}
+.tap{margin-top:34px;font-size:15px;opacity:0;transition:opacity 1.2s;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+#splash.rdy .tap{opacity:.9}
+.hdr{text-align:center;margin:10px 0 4px}
+.pn{background:var(--gl);border:1px solid var(--ln);border-radius:20px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 18px 50px rgba(0,0,0,.32)}
+#menu .pn{width:min(720px,100%)}
+.me{display:flex;align-items:center;gap:14px;padding:14px 18px;margin:16px 0 12px}
+.lv{width:50px;height:50px;flex:none;display:grid;place-items:center;border-radius:50%;font-family:var(--s);font-size:22px;background:var(--c);color:#2a1a10}
+.xp{flex:1;min-width:0}
+.xp b{font-size:17px}.xp small{color:var(--mu);font-size:12px;float:right;margin-top:4px}
+.xb{height:5px;background:rgba(255,255,255,.14);border-radius:3px;margin-top:8px;overflow:hidden}
+.xb i{display:block;height:100%;width:0;background:var(--c);transition:width .8s}
+.rs{display:flex;gap:16px;text-align:center}
+.rs small{display:block;font-size:12px;color:var(--mu)}.rs b{font-size:19px;color:var(--gd)}
+.sec{padding:16px 18px;border-top:1px solid var(--ln)}
+.sec:first-child{border:0}
+.lbl{font-size:14px;color:var(--mu);margin-bottom:10px}
+.opts{display:grid;gap:9px}
+.modes{grid-template-columns:repeat(3,1fr)}
+.opt{text-align:left;padding:12px 14px;background:var(--g2);border:1px solid transparent;border-radius:14px;transition:.2s}
+.opt.on{border-color:var(--c);background:rgba(255,255,255,.15)}
+.opt b{display:block;font-size:16px}.opt em{display:block;font-style:normal;font-size:12px;color:var(--mu);margin-top:3px}
+.tgs{display:flex;gap:9px;flex-wrap:wrap}
+.tg{display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--ln);border-radius:20px;font-size:14px;color:var(--mu)}
+.tg i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--mu)}
+.tg.on{color:var(--tx);border-color:var(--c)}.tg.on i{background:var(--c);border-color:var(--c)}
+.go{width:100%;padding:15px;font-size:18px;font-weight:800;color:#2a1a10;background:var(--gd);border-radius:14px;transition:.15s}
+.go:active{transform:scale(.98)}
+.go.sm{font-size:15px;padding:12px}
+.btn{padding:9px 16px;background:var(--g2);border:1px solid var(--ln);border-radius:12px;font-size:14px;font-weight:700;transition:.15s}
+.btn:hover{border-color:var(--mu)}
+.qa{display:flex;gap:8px;margin-bottom:12px}.qa .btn{flex:1;padding:11px 6px}
+.lk{margin:26px 0 8px;color:var(--tx);opacity:.8;font-size:14px;text-decoration:underline;text-underline-offset:4px;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.dd{position:relative}
+.ddb,.ddo{width:100%;display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:2px 12px;text-align:left;padding:12px 16px;background:var(--g2);border:1px solid var(--ln);border-radius:14px}
+.ddb i,.ddo i{grid-row:span 2;width:11px;height:11px;border-radius:50%;background:var(--k)}
+.ddb b,.ddo b{font-size:17px}
+.ddb em,.ddo em{grid-column:2;font-style:normal;font-size:12px;color:var(--mu)}
+.ddb u{grid-column:3;grid-row:1/3;width:9px;height:9px;border-right:2px solid var(--mu);border-bottom:2px solid var(--mu);transform:rotate(45deg);transition:.2s}
+.open .ddb u{transform:rotate(-135deg)}
+.ddl{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:20;padding:6px;background:#181c38;border:1px solid var(--ln);border-radius:14px;max-height:300px;overflow:auto;gap:4px}
+.open .ddl{display:grid}
+.ddo{border-color:transparent;background:transparent}
+.ddo:hover{background:rgba(255,255,255,.1)}
+#game{--bs:min(92vw,calc(100vh - 250px),620px)}
+.bar{width:min(1040px,100%);display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px}
+.t{flex:1;min-width:110px;text-shadow:0 1px 10px rgba(0,0,0,.6)}.t b{display:block;font-family:var(--s);font-size:20px}.t small{color:var(--tx);opacity:.85;font-size:13px}
+.chip{background:var(--gl);border:1px solid var(--ln);border-radius:12px;padding:6px 12px;min-width:74px;text-align:center;backdrop-filter:blur(10px)}
+.chip small{display:block;font-size:11px;color:var(--mu)}.chip b{font-size:18px;font-variant-numeric:tabular-nums}
+.chip.g b{color:var(--gd)}
+.cmb{width:min(1040px,100%);height:24px;display:flex;align-items:center;gap:12px;margin-bottom:8px;opacity:0;transition:opacity .3s}
+.cmb.on{opacity:1}
+.cmb span{font-size:15px;font-weight:800;color:var(--gd);text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.cmb div{flex:1;height:4px;background:rgba(255,255,255,.18);border-radius:2px;overflow:hidden}
+.cmb i{display:block;height:100%;width:100%;background:var(--gd)}
+.main{width:min(1040px,100%);display:flex;gap:18px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.frame{padding:10px;background:rgba(10,14,30,.62);border:1px solid var(--ln);border-radius:20px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.bw{position:relative;width:max(280px,var(--bs));height:max(280px,var(--bs))}
+.board{position:relative;z-index:1;width:100%;height:100%;display:grid;touch-action:none;user-select:none;-webkit-user-select:none}
+.ov{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.ov line{stroke-linecap:round;fill:none}
+.sl{stroke:var(--c);stroke-width:.8}
+.fl{stroke-width:.78;opacity:.82;animation:cap .3s ease}
+@keyframes cap{from{stroke-width:0}}
+.c{display:flex;align-items:center;justify-content:center;font-weight:800;font-size:calc(max(280px,var(--bs)) / var(--n) * .5);color:#ece6f6;transition:color .1s,transform .1s}
+.c.sel{color:#fff;transform:scale(1.12)}
+.c.f{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.c.hint{animation:hp .6s ease 2;color:var(--c)}
+@keyframes hp{50%{transform:scale(1.4)}}
+.side{width:min(300px,100%);flex:1 1 250px;max-width:340px}
+.hd{padding:12px 16px;border-bottom:1px solid var(--ln);font-size:14px;color:var(--mu);display:flex;justify-content:space-between}
+.hd b{color:var(--tx)}
+.wl{list-style:none;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:calc(var(--bs) - 120px);min-height:110px;overflow:auto}
+.wl li{padding:6px 10px;font-size:14px;font-weight:700;background:var(--g2);border-left:3px solid var(--ln);border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.3s}
+.wl li.d{color:var(--mu);text-decoration:line-through;border-left-color:var(--k);background:transparent}
+.acts{display:flex;gap:8px;padding:10px;border-top:1px solid var(--ln)}
+.acts .btn,.acts .go{flex:1;padding:9px 4px;font-size:13px}
+.pop{position:fixed;z-index:70;pointer-events:none;font-weight:800;font-size:22px;transform:translate(-50%,-50%);text-shadow:0 2px 10px rgba(0,0,0,.7);animation:up 1s ease-out forwards}
+@keyframes up{to{transform:translate(-50%,-150%);opacity:0}}
+.modal{position:fixed;inset:0;background:rgba(8,10,22,.55);display:none;align-items:center;justify-content:center;padding:18px;z-index:50;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.modal.on{display:flex;animation:in .3s}
+.box{width:min(420px,100%);text-align:center;padding:26px 22px 20px;max-height:92vh;overflow:auto}
+.box h2{font-size:14px;font-weight:700;color:var(--mu)}
+.box h3{font-family:var(--s);font-size:30px;margin:6px 0 14px}
+.stars{display:flex;gap:10px;justify-content:center;margin-bottom:18px}
+.stars i{width:44px;height:44px;background:rgba(255,255,255,.18);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.stars i.on{background:var(--gd);animation:pp .5s}
+@keyframes pp{50%{transform:scale(1.35)}}
+.st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.st div{background:var(--g2);border:1px solid var(--ln);padding:9px 4px;border-radius:12px}
+.st small{display:block;font-size:12px;color:var(--mu)}.st b{font-size:21px}
+.rw{font-size:14px;color:var(--gd);margin-bottom:6px}.lu{font-size:16px;font-weight:800;min-height:20px;margin-bottom:12px}
+.box .acts{padding:0;border:0}
+#shopL{max-height:56vh;overflow:auto;text-align:left;margin:6px 0 14px}
+#shopL h4{font-size:14px;color:var(--mu);margin:12px 0 8px}
+.si{width:100%;display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;padding:11px 14px;background:var(--g2);border:1px solid var(--ln);border-radius:12px;margin-bottom:8px}
+.si em{grid-column:1;font-style:normal;font-size:12px;color:var(--mu)}
+.si span{grid-column:2;grid-row:1/3;align-self:center;font-size:13px;color:var(--gd)}
+.si.on{border-color:var(--c)}.si.on span{color:var(--c)}
+.crd{width:min(440px,100%);padding:30px 26px 22px}
+.crd .mu{color:var(--mu);font-size:14px;margin:-6px 0 22px}
+.crd dt{font-size:13px;color:var(--mu);margin-top:18px}
+.crd dd{font-size:17px;font-weight:700;margin-top:3px}
+.crd .lg{font-size:12px;color:var(--mu);margin:26px 0 16px}
+.c,.chip b,.rs b,.lv,.st b,.pop,.cmb span,.hd b,.rs small,.xp small,.qo i,.hintb b{font-family:var(--nf);font-style:normal}
+.logo{font-weight:700;letter-spacing:.02em}
+.acts{align-items:center}
+.go.alt{margin-top:10px;background:rgba(255,255,255,.08);color:var(--tx);border:1px solid var(--c)}
+.hintb{position:relative;flex:none;width:54px;height:54px;border-radius:16px;background:linear-gradient(160deg,#4175f5,#1b3da8);box-shadow:inset 0 2px 1px rgba(255,255,255,.4),inset 0 -4px 0 rgba(0,0,0,.22),0 6px 14px rgba(15,35,110,.5);display:grid;place-items:center;transition:transform .15s}
+.hintb:active{transform:scale(.94)}
+.hintb svg{width:32px;height:32px}
+.hintb b{position:absolute;right:-6px;bottom:-6px;min-width:26px;padding:1px 6px;border-radius:10px;background:#16193a;border:1px solid var(--gd);color:var(--gd);font-size:11px;font-weight:800;text-align:center}
+.qtm{width:min(560px,100%);height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
+.qtm i{display:block;height:100%;width:100%;background:var(--gd);transition:width .1s linear}
+.qwrap{width:min(560px,100%);margin:auto 0}
+.qbox{position:relative;margin:34px 0 22px;padding:30px 22px 24px;background:rgba(10,14,26,.74);border:2px solid var(--c);border-radius:6px;text-align:center;font-size:clamp(21px,5.6vw,28px);font-weight:600;line-height:1.35;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.qm{position:absolute;left:-6px;top:-8px;font-size:84px;line-height:1;color:var(--c)}
+.dice{position:absolute;right:-8px;top:-36px;width:62px;height:62px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+.qopts{display:grid;gap:12px}
+.qo{display:flex;align-items:center;gap:14px;text-align:left;padding:14px 18px;background:rgba(10,14,26,.55);border:1.5px solid var(--ln);border-radius:14px;font-size:clamp(20px,5.4vw,26px);font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:.2s}
+.qo i{font-weight:800;font-size:.7em;width:1.9em;height:1.9em;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.16);flex:none}
+.qo.ok{background:rgba(52,168,108,.6);border-color:#5fe0a0}
+.qo.no{background:rgba(214,82,66,.6);border-color:#ff8a78}
+.qf{min-height:32px;margin-top:16px;text-align:center;font-size:22px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.qf.g{color:#7ff0b4}.qf.b{color:#ff9a8a}
+.qbig{font-size:19px;margin-bottom:14px}
+.c.hl{color:#2a1a10;background:var(--c);border-radius:50%}
+.qll{display:flex;gap:8px;margin-top:6px}.qll .btn{flex:1;padding:10px 4px;font-size:13px}
+.lks{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin:26px 0 8px}.lks .lk{margin:0}
+#lgB{max-height:56vh;overflow:auto;text-align:left;font-size:14px;line-height:1.6;margin:6px 0 14px}
+#lgB h4{font-size:15px;margin:14px 0 4px}#lgB p{color:var(--mu)}
+.ddb,.ddo{grid-template-columns:28px 1fr auto}
+.ddb i,.ddo i{width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,.14);box-shadow:none;display:grid;place-items:center;font-family:var(--nf);font-style:normal;font-weight:800;font-size:14px}
+#menu .sec:first-child{position:relative;z-index:5}
+.chip.lo b{color:#ff8a78}
+.lv{width:56px;height:64px;background:none;border-radius:0;padding:0;display:block}
+.lv svg{width:100%;height:100%;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45))}
+.mdr{display:flex;align-items:center;gap:14px;text-align:left;padding:10px 14px;background:var(--g2);border:1px solid var(--ln);border-radius:14px;margin-bottom:10px}
+.mdr span{width:50px;height:58px;flex:none}.mdr svg{width:100%;height:100%}
+.mdr b{display:block;font-size:18px}.mdr em{font-size:13px;color:var(--mu)}
+.mdr.cur{border-color:var(--c)}.mdr.lock{opacity:.45;filter:grayscale(.6)}
+@media(max-width:560px){.modes{grid-template-columns:1fr}.rs{gap:10px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition:none!important}}
+</style>
 </head>
 <body>
-
-    <div class="particles" id="particles"></div>
-
-    <div class="watermark-top">
-        <span class="texto-creador">CREADOR: <span class="nombre">SAMUEL PDH</span></span>
-    </div>
-    <div class="watermark-central">✦ SAMUEL PDH ✦</div>
-
-    <div class="container" id="container3d">
-        <div class="header">
-            <h1>SOPA DE LETRAS <span class="pdh">PDH</span></h1>
-            <p class="subtitle">✦ ENCUENTRA TODAS LAS PALABRAS ✦</p>
-        </div>
-
-        <div class="level-indicator" id="levelIndicator">🎯 Nivel 1</div>
-        <div class="coins-display">
-            🪙 <span id="coinsDisplay">0</span> monedas
-            <button onclick="toggleShop()" title="Tienda">🛒</button>
-        </div>
-
-        <div class="top-controls">
-            <select id="temaSelect">
-                <option value="animales">🐾 Animales</option>
-                <option value="frutas">🍎 Frutas</option>
-                <option value="paises">🌍 Países</option>
-                <option value="deportes">⚽ Deportes</option>
-                <option value="colores">🎨 Colores</option>
-                <option value="profesiones">👨‍⚕️ Profesiones</option>
-                <option value="generos_musicales">🎵 Géneros Musicales</option>
-                <option value="futbolistas">⚽ Futbolistas</option>
-                <option value="peliculas">🎬 Películas</option>
-                <option value="marcas">🏷️ Marcas</option>
-                <option value="tecnologia">💻 Tecnología</option>
-                <option value="cuerpo_humano">🦴 Cuerpo Humano</option>
-                <option value="instrumentos">🎸 Instrumentos</option>
-                <option value="comida">🍕 Comida</option>
-                <option value="videojuegos">🎮 Videojuegos</option>
-                <option value="superheroes">🦸 Superhéroes</option>
-            </select>
-            <select id="nivelSelect">
-                <option value="facil">🟢 Fácil</option>
-                <option value="normal" selected>🟡 Normal</option>
-                <option value="dificil">🔴 Difícil</option>
-                <option value="superDificil">💀 Extremo</option>
-            </select>
-            <label>
-                ⏱️ <input type="checkbox" id="timerToggle"> Cronómetro
-            </label>
-            <button class="btn-play" id="btnJugar">🎮 Jugar</button>
-        </div>
-
-        <div class="timer-display" id="timerDisplay">⏱️ <span id="timerText">05:00</span></div>
-        <div class="message" id="message">🎯 Selecciona tema y nivel, presiona Jugar</div>
-
-        <div class="grid-wrapper" id="gridWrapper">
-            <div class="grid-container" id="gridContainer"></div>
-        </div>
-
-        <div class="word-list" id="wordList"></div>
-
-        <div class="stats">
-            <span>📊 <span id="progreso">0%</span></span>
-            <span>✅ <span id="encontradas">0</span>/<span id="totalPalabras">0</span></span>
-            <button class="btn-hint" id="btnHint">💡 (<span id="pistasRestantes">3</span>)</button>
-            <button class="btn-next" id="btnNext">▶️ Siguiente</button>
-            <button class="btn-reset" id="btnReset">🔄</button>
-        </div>
-    </div>
-
-    <div class="shop-modal" id="shopModal">
-        <div class="shop-content">
-            <h3>🛒 Tienda de Pistas</h3>
-            <p>🪙 Monedas: <b id="shopCoins">0</b></p>
-            <p>💡 Pistas disponibles: <b id="shopPistas">3</b></p>
-            <button class="btn-buy" onclick="comprarPista()">💡 Comprar Pista (2000 🪙)</button>
-            <button class="btn-ad" onclick="verAnuncio()">📺 Ver Anuncio (+500 🪙)</button>
-            <button class="btn-close" onclick="toggleShop()">Cerrar</button>
-        </div>
-    </div>
-
-    <script>
-        // ====== AQUÍ VA TODO TU JAVASCRIPT EXISTENTE ======
-        // (No lo modifico, solo lo mantengo igual)
-        (function() {
-            "use strict";
-
-            // ============================================================
-            // SISTEMA DE SONIDOS OPTIMIZADO
-            // ============================================================
-            class SoundSystem {
-                constructor() {
-                    this.ctx = null;
-                    this.enabled = true;
-                    try {
-                        this.ctx = new(window.AudioContext || window.webkitAudioContext)();
-                    } catch (e) {
-                        this.enabled = false;
-                    }
-                    this.initialized = false;
-                }
-                resume() {
-                    if (!this.initialized && this.enabled && this.ctx) {
-                        try {
-                            if (this.ctx.state === 'suspended') this.ctx.resume();
-                            const osc = this.ctx.createOscillator();
-                            const gain = this.ctx.createGain();
-                            osc.connect(gain);
-                            gain.connect(this.ctx.destination);
-                            gain.gain.value = 0.001;
-                            osc.start(0);
-                            osc.stop(0.001);
-                        } catch (e) {}
-                        this.initialized = true;
-                    }
-                }
-                _play(freq, type, duration, vol = 0.03) {
-                    if (!this.enabled || !this.ctx) return;
-                    this.resume();
-                    try {
-                        const t = this.ctx.currentTime;
-                        const osc = this.ctx.createOscillator();
-                        const gain = this.ctx.createGain();
-                        osc.connect(gain);
-                        gain.connect(this.ctx.destination);
-                        osc.frequency.value = freq;
-                        osc.type = type;
-                        gain.gain.setValueAtTime(Math.min(vol, 0.03), t);
-                        gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-                        osc.start(t);
-                        osc.stop(t + duration);
-                    } catch (e) {}
-                }
-                select() { this._play(700, 'sine', 0.03, 0.015); }
-                found() {
-                    [523, 659, 784].forEach((f, i) => setTimeout(() => this._play(f, 'sine', 0.08, 0.03), i *
-                        40));
-                }
-                win() {
-                    [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this._play(f, 'triangle', 0.12,
-                        0.04), i * 70));
-                }
-                error() { this._play(200, 'sawtooth', 0.08, 0.02); }
-                hint() { this._play(880, 'sine', 0.1, 0.025); }
-                lose() {
-                    [400, 300, 200].forEach((f, i) => setTimeout(() => this._play(f, 'sawtooth', 0.15, 0.03),
-                        i * 100));
-                }
-            }
-
-            // ============================================================
-            // BANCO DE PALABRAS MASIVO (50+ palabras por categoría)
-            // ============================================================
-            const palabrasPorTema = {
-                animales: [
-                    'PERRO', 'GATO', 'ELEFANTE', 'JIRAFA', 'LEON', 'TIGRE', 'OSO', 'CABALLO', 'VACA', 'CERDO',
-                    'CONEJO', 'RATON', 'MONO', 'ZORRO', 'LOBO', 'CIERVO', 'FOCA', 'BALLENA', 'DELFIN', 'TIBURON',
-                    'AGUILA', 'PALOMA', 'GAVIOTA', 'PAVO', 'GALLINA', 'SERPIENTE', 'LAGARTO', 'TORTUGA', 'HAMSTER',
-                    'ARDILLA', 'MAPACHE', 'BUHO', 'CANGREJO', 'PULPO', 'CALAMAR', 'CAMELLO', 'CANGURO', 'KOALA',
-                    'PINGUINO', 'GORILA', 'CHIMPANCE', 'ORNITORRINCO', 'SURICATA', 'ERIZO', 'CASTON', 'NUTRIA',
-                    'PANTERA', 'LEOPARDO', 'GUEOPARDO', 'JAGUAR', 'PUMA', 'LINCE', 'ARMADILLO', 'PEREZOSO',
-                    'MURCIELAGO', 'RINOCERONTE', 'HIPOPOTAMO', 'BUFFALO', 'ALCE', 'RENO'
-                ],
-                frutas: [
-                    'MANZANA', 'PERA', 'NARANJA', 'LIMON', 'PLATANO', 'FRESA', 'MELON', 'SANDIA', 'UVA', 'PINA',
-                    'MANDARINA', 'CEREZA', 'DURAZNO', 'CIRUELA', 'HIGO', 'KIWI', 'PAPAYA', 'MANGO', 'GUAYABA',
-                    'FRAMBUESA', 'ARANDANO', 'MORA', 'GRANADA', 'COCO', 'MARACUYA', 'LITCHI', 'CARAMBOLA',
-                    'POMELO', 'TAMARINDO', 'CHIRIMOYA', 'GUANABANA', 'ZAPOTE', 'MAMEY', 'NISPERO', 'DATIL',
-                    'PASAS', 'HIGOCHUMBO', 'GROSELLA', 'MELOCOTON', 'NECTARINA', 'ALBARICOQUE', 'MEMBRILLO',
-                    'ACAI', 'GUAYABANA', 'PITAHAYA', 'JACKFRUIT', 'DURIAN', 'LONGAN', 'RAMBUTAN', 'MANGOSTAN'
-                ],
-                paises: [
-                    'MEXICO', 'ARGENTINA', 'COLOMBIA', 'PERU', 'CHILE', 'ESPAÑA', 'FRANCIA', 'ITALIA', 'ALEMANIA',
-                    'JAPON', 'CHINA', 'BRASIL', 'CANADA', 'AUSTRALIA', 'INDIA', 'RUSIA', 'EGIPTO', 'GRECIA',
-                    'PORTUGAL', 'HOLANDA', 'SUECIA', 'NORUEGA', 'DINAMARCA', 'BELGICA', 'SUIZA', 'COREA',
-                    'TAILANDIA', 'CUBA', 'VENEZUELA', 'ECUADOR', 'BOLIVIA', 'URUGUAY', 'PARAGUAY', 'PANAMA',
-                    'COSTARICA', 'HONDURAS', 'GUATEMALA', 'NICARAGUA', 'ELSALVADOR', 'REPUBLICADOMINICANA',
-                    'PUERTORICO', 'JAMAICA', 'HAITI', 'FILIPINAS', 'VIETNAM', 'MALASIA', 'INDONESIA',
-                    'NUEVAZELANDA', 'IRLANDA', 'ESCOCIA', 'GALES', 'INGLATERRA', 'AUSTRIA', 'HUNGRIA',
-                    'POLONIA', 'RUMANIA', 'BULGARIA', 'TURQUIA', 'IRAN', 'IRAK', 'ARABIASAUDI'
-                ],
-                deportes: [
-                    'FUTBOL', 'BALONCESTO', 'TENIS', 'NATACION', 'ATLETISMO', 'VOLEIBOL', 'BEISBOL', 'RUGBY',
-                    'GOLF', 'BOXEO', 'ESGRIMA', 'CICLISMO', 'SURF', 'PATINAJE', 'ESQUI', 'JUDO', 'TAEKWONDO',
-                    'PADEL', 'BADMINTON', 'HOCKEY', 'KARATE', 'PESCA', 'SENDERISMO', 'ESCALADA', 'REMO',
-                    'VELA', 'TIRO', 'TIROCONARCO', 'EQUITACION', 'ESQUIACUATICO', 'SNOWBOARD', 'SKATEBOARDING',
-                    'PARKOUR', 'CROSSFIT', 'YOGA', 'PILATES', 'ZUMBA', 'AEROBICOS', 'SPINNING', 'TRAILRUNNING',
-                    'MARATON', 'TRIATLON', 'PENTATLON', 'DECATLON', 'HALTEROFILIA', 'LUCHA', 'SUMOCATORI',
-                    'CAPOEIRA', 'MUAYTHAI', 'KICKBOXING', 'KRAVMAGA', 'PARKOUR', 'CALISTENIA'
-                ],
-                colores: [
-                    'ROJO', 'AZUL', 'VERDE', 'AMARILLO', 'NEGRO', 'BLANCO', 'GRIS', 'MARRON', 'ROSADO', 'NARANJA',
-                    'MORADO', 'CIAN', 'MAGENTA', 'DORADO', 'PLATEADO', 'BEIGE', 'CREMA', 'LILA', 'FUCSIA',
-                    'TURQUESA', 'CORAL', 'SALMON', 'OLIVA', 'MENTA', 'LAVANDA', 'MOSTAZA', 'BURDEOS', 'MARFIL',
-                    'CAOBA', 'ESMERALDA', 'ZAFIRO', 'RUBI', 'AMBAR', 'COBALTO', 'AÑIL', 'VIOLETA', 'PURPURA',
-                    'ESCALATA', 'CARMIN', 'BERMELLON', 'OCRE', 'SIENNA', 'SEPIA', 'CAQUI', 'TURQUI',
-                    'CELESTE', 'MARINO', 'AGUAMARINA', 'TURMALINA', 'JADE', 'CRISOLITO', 'TOPACIO'
-                ],
-                profesiones: [
-                    'MEDICO', 'INGENIERO', 'ARQUITECTO', 'ABOGADO', 'PROFESOR', 'ENFERMERO', 'PILOTO',
-                    'BOMBERO', 'POLICIA', 'CARPINTERO', 'MECANICO', 'ELECTRICISTA', 'PLOMERO', 'COCINERO',
-                    'PANADERO', 'JARDINERO', 'PINTOR', 'ESCULTOR', 'MUSICO', 'BAILARIN', 'DENTISTA',
-                    'VETERINARIO', 'FARMACEUTICO', 'PSICOLOGO', 'PERIODISTA', 'ASTRONAUTA', 'CHEF', 'TAXISTA',
-                    'BIOLOGO', 'QUIMICO', 'FISICO', 'MATEMATICO', 'ASTRONOMO', 'GEOLOGO', 'ARQUEOLOGO',
-                    'ANTROPOLOGO', 'SOCIOLOGO', 'FILOSOFO', 'ESCRITOR', 'POETA', 'ACTOR', 'ACTRIZ',
-                    'DIRECTOR', 'PRODUCTOR', 'CAMAROGRAFO', 'FOTOGRAFO', 'DISEÑADOR', 'PROGRAMADOR',
-                    'DESARROLLADOR', 'ANALISTA', 'CONSULTOR', 'ASESOR', 'TERAPEUTA', 'NUTRICIONISTA'
-                ],
-                generos_musicales: [
-                    'ROCK', 'POP', 'JAZZ', 'BLUES', 'SALSA', 'REGGAE', 'TANGO', 'CUMBIA', 'BACHATA', 'RAP',
-                    'HIPHOP', 'CLASICA', 'ELECTRO', 'TECHNO', 'HOUSE', 'METAL', 'PUNK', 'FOLCLORE', 'MERENGUE',
-                    'VALLENATO', 'RANCHERA', 'FLAMENCO', 'BOSSA', 'SAMBA', 'FUNK', 'SOUL', 'RANDB', 'GOSPEL',
-                    'COUNTRY', 'DISCO', 'TRANCE', 'DUBSTEP', 'REGGAETON', 'TRAP', 'KOREANPOP', 'JPOP',
-                    'INDIE', 'ALTERNATIVO', 'GRUNGE', 'HARDROCK', 'HEAVYMETAL', 'PUNKROCK', 'SKAPUNK',
-                    'ROCKANDROLL', 'ROCKABILLY', 'DOOWOP', 'MOTOWN', 'NEWAGE', 'AMBIENT', 'CHILLOUT', 'LOFI'
-                ],
-                futbolistas: [
-                    'MESSI', 'CRISTIANO', 'NEYMAR', 'MBAPPE', 'SUAREZ', 'MODRIC', 'BENZEMA', 'LEWANDOWSKI',
-                    'SALAH', 'DEBRUYNE', 'HALAND', 'VINICIUS', 'BELLINGHAM', 'KANE', 'SON', 'VALVERDE',
-                    'PEDRI', 'GAVI', 'FODEN', 'MARTINEZ', 'ALVAREZ', 'MACALLISTER', 'RONALDO', 'RONALDINHO',
-                    'ZIDANE', 'BECKHAM', 'PELÉ', 'MARADONA', 'CRUYFF', 'BAGGIO', 'HENRY', 'SHEVCHENKO',
-                    'INIESTA', 'XAVI', 'PUYOL', 'CASILLAS', 'BUFFON', 'NEUER', 'COURTOIS', 'ALISSON',
-                    'VANDIJK', 'RAMOS', 'PIQUE', 'MALDINI', 'NESTA', 'CAFU', 'ROBERTOCARLOS', 'ZANETTI',
-                    'FIGO', 'TOTTI', 'DELPIERO', 'RAUL', 'VILLA', 'TORRES', 'AGUERO', 'DYBALA', 'LAUTARO'
-                ],
-                peliculas: [
-                    'TITANIC', 'AVATAR', 'GLADIADOR', 'INCEPTION', 'MATRIX', 'ALIEN', 'DEPREDADOR', 'TERMINATOR',
-                    'JURASSIC', 'TOYSTORY', 'FROZEN', 'MOANA', 'ENCANTO', 'COCO', 'SHREK', 'MADAGASCAR',
-                    'NEMO', 'UP', 'WALLE', 'RATATOUILLE', 'BRAVE', 'SOUL', 'LUCA', 'TURNINGRED', 'STARWARS',
-                    'HARRYPOTTER', 'LORDOFTHERINGS', 'HOBBIT', 'BATMANBEGINS', 'DARKKNIGHT', 'JOKER',
-                    'AVENGERS', 'INFINITYWAR', 'ENDGAME', 'BLACKPANTHER', 'SPIDERMANNO', 'IRONMANTRES',
-                    'THORRAGNAROK', 'GUARDIANES', 'DEADPOOL', 'WOLVERINE', 'XMEN', 'FASTANDDURIOUS',
-                    'MISSIONIMPOSSIBLE', 'JAMESBOND', 'INDIANAJONES', 'ROCKY', 'RAMBO', 'TOPMAVERICK', 'INTERESTELAR'
-                ],
-                marcas: [
-                    'NIKE', 'ADIDAS', 'PUMA', 'REEBOK', 'APPLE', 'SAMSUNG', 'SONY', 'LG', 'TOYOTA', 'FORD',
-                    'HONDA', 'BMW', 'MERCEDES', 'FERRARI', 'LAMBORGHINI', 'GUCCI', 'PRADA', 'ZARA', 'LEVIS',
-                    'TOMMY', 'CALVIN', 'VERSACE', 'CHANEL', 'DIOR', 'BALENCIAGA', 'MICROSOFT', 'GOOGLE',
-                    'AMAZON', 'FACEBOOK', 'INSTAGRAM', 'TIKTOK', 'NETFLIX', 'SPOTIFY', 'YOUTUBE', 'TWITTER',
-                    'MCDONALDS', 'KFC', 'BURGERKING', 'STARBUCKS', 'COCACOLA', 'PEPSI', 'NESTLE', 'KELLOGGS',
-                    'NINTENDO', 'PLAYSTATION', 'XBOX', 'ROLEX', 'CARTIER', 'OMEGA', 'TAGHEUER'
-                ],
-                tecnologia: [
-                    'CELULAR', 'TABLET', 'LAPTOP', 'ROUTER', 'SERVIDOR', 'BLUETOOTH', 'WIFI', 'INTERNET',
-                    'CAMARA', 'AUDIFONOS', 'TECLADO', 'MONITOR', 'IMPRESORA', 'ESCANER', 'PROCESADOR',
-                    'MEMORIA', 'DISCODURO', 'USB', 'HDMI', 'MICROFONO', 'PARLANTES', 'DRON', 'ROBOT',
-                    'SENSOR', 'CHIP', 'PANTALLA', 'BATERIA', 'CARGADOR', 'SIMCARD', 'ANTENA', 'MODEM',
-                    'FIREWALL', 'ANTIVIRUS', 'SOFTWARE', 'HARDWARE', 'FIRMWARE', 'DATABASE', 'ALGORITMO',
-                    'BITCOIN', 'BLOCKCHAIN', 'INTELIGENCIA', 'ARTIFICIAL', 'REALIDAD', 'VIRTUAL', 'AUMENTADA',
-                    'NANOTECNOLOGIA', 'CUANTICO', 'SATELITE', 'FIBRAOPTICA', 'LASER'
-                ],
-                cuerpo_humano: [
-                    'CEREBRO', 'CORAZON', 'PULMON', 'HIGADO', 'RINON', 'ESTOMAGO', 'INTESTINO', 'HUESO',
-                    'MUSCULO', 'PIEL', 'OJO', 'OIDO', 'NARIZ', 'BOCA', 'LENGUA', 'DIENTE', 'SANGRE',
-                    'VENA', 'ARTERIA', 'NERVIO', 'COLUMNA', 'CRANEO', 'FEMUR', 'TIBIA', 'CUBITO', 'RADIO',
-                    'HUMERO', 'CLAVICULA', 'OMOPLATO', 'ESTERNON', 'COSTILLA', 'PELVIS', 'ROTULA', 'PERONÉ',
-                    'FALANGE', 'METACARPO', 'CARPO', 'TARSO', 'TENDON', 'LIGAMENTO', 'CARTILAGO', 'TRAQUEA',
-                    'ESOFAGO', 'LARINGE', 'FARINGE', 'BRONQUIO', 'ALVEOLO', 'PANCREAS', 'BAZO', 'VESICULA'
-                ],
-                instrumentos: [
-                    'GUITARRA', 'PIANO', 'VIOLIN', 'FLAUTA', 'SAXOFON', 'TROMPETA', 'BATERIA', 'BAJO',
-                    'ARPA', 'ACORDEON', 'CLARINETE', 'TROMBON', 'UKULELE', 'BANJO', 'MANDOLINA',
-                    'VIOLONCHELO', 'CONTRABAJO', 'OBOE', 'FAGOT', 'CORNO', 'TUBA', 'XILOFONO', 'TIMBAL',
-                    'MARACAS', 'PANDERETA', 'CASTANUELAS', 'TRIANGULO', 'ORGANO', 'CLAVICORDIO', 'LAUD',
-                    'SITAR', 'DIDGERIDOO', 'BALALAIKA', 'CHARANGO', 'CUATRO', 'REQUINTO', 'BANDONEON',
-                    'MELODICA', 'ARMONICA', 'OCARINA', 'ZANFONA', 'DULCIMER', 'CIMBALO', 'GONG', 'CAMPANA',
-                    'BONGO', 'CONGA', 'DJEMBE', 'CAJON', 'ZAMPOÑA'
-                ],
-                comida: [
-                    'HAMBURGUESA', 'PIZZA', 'TACO', 'SUSHI', 'PASTA', 'POLLOFRITO', 'BURRITO', 'NACHOS',
-                    'HOTDOG', 'DONUT', 'BROWNIE', 'HELADO', 'CHOCOLATE', 'GALLETA', 'WAFFLE', 'PANQUEQUE',
-                    'SANDWICH', 'LASAGNA', 'CEVICHE', 'PAELLA', 'EMPANADA', 'AREPA', 'TAMAL', 'ENCHILADA',
-                    'QUESADILLA', 'CHILAQUILES', 'POZOLE', 'MOLE', 'GUACAMOLE', 'CHURRO', 'ALFAJOR',
-                    'FLAN', 'TIRAMISU', 'CHEESECAKE', 'MACARRON', 'CROISSANT', 'BAGUETTE', 'PRETZEL',
-                    'RAMEN', 'KIMCHI', 'DUMPLING', 'SPRINGROLL', 'PADTHAI', 'BURRITOBOWL', 'CHOWMEIN',
-                    'FALAFEL', 'KEBAB', 'GYROS', 'HUMMUS', 'SAMOSA'
-                ],
-                videojuegos: [
-                    'MARIO', 'SONIC', 'ZELDA', 'POKEMON', 'KIRBY', 'MINECRAFT', 'FORTNITE', 'ROBLOX',
-                    'AMONGUS', 'TETRIS', 'PACMAN', 'DOOM', 'HALO', 'SKYRIM', 'FIFA', 'GTA', 'SIMCITY',
-                    'SPLATOON', 'FALLOUT', 'PORTAL', 'BIOSHOCK', 'DESTINY', 'WARZONE', 'LEAGUEOFLEGENDS',
-                    'DOTA', 'COUNTERSTRIKE', 'VALORANT', 'APEXLEGENDS', 'OVERWATCH', 'RAINBOW', 'ASSASSINSCREED',
-                    'CALLODUTY', 'BATTLEFIELD', 'RESIDENTEVIL', 'SILENTHILL', 'FINALFANTASY', 'KINDOMHEARTS',
-                    'CHRONOTRIGGER', 'STREETFIGHTER', 'MORTALKOMBAT', 'TEKKEN', 'SMASHBROS', 'ANIMALCROSSING',
-                    'THEWITCHER', 'CYBERPUNK', 'REDDEAD', 'GODOFWAR', 'UNCHARTED', 'THELASTOFUS', 'HORIZON'
-                ],
-                superheroes: [
-                    'BATMAN', 'SUPERMAN', 'SPIDERMAN', 'IRONMAN', 'THOR', 'HULK', 'FLASH', 'WONDERWOMAN',
-                    'AQUAMAN', 'ROBIN', 'WOLVERINE', 'DEADPOOL', 'VENOM', 'THANOS', 'LOKI', 'GROOT',
-                    'ANTMAN', 'HAWKEYE', 'SHANGCHI', 'MOONKNIGHT', 'DAREDEVIL', 'PUNISHER', 'BLADE',
-                    'BLACKWIDOW', 'CAPITANAMERICA', 'BLACKPANTHER', 'DOCTORSTRANGE', 'CAPITANMARVEL',
-                    'GREENLANTERN', 'MARTIANMANHUNTER', 'SHAZAM', 'CYBORG', 'NIGHTWING', 'BATGIRL',
-                    'CATWOMAN', 'SUPERGIRL', 'POWERGIRL', 'FALCON', 'WINTERSOLDIER', 'WARMACHINE',
-                    'SCARLETWITCH', 'VISION', 'QUICKSILVER', 'FANTASTICFOUR', 'SILVERSURFER', 'GHOSTRIDER',
-                    'DRSTRANGE', 'SPIDERGWEN', 'MILESMORALES', 'DAREDEVIL'
-                ]
-            };
-
-            // ============================================================
-            // VARIABLES DE ESTADO
-            // ============================================================
-            const sound = new SoundSystem();
-            let grid = [];
-            let palabras = [];
-            let palabrasEncontradas = [];
-            let celdasSeleccionadas = [];
-            let isSelecting = false;
-            let size = 10;
-            let directionLock = null;
-            let startRow = -1,
-                startCol = -1;
-            let lastSelectedRow = -1,
-                lastSelectedCol = -1;
-            let foundSet = new Set();
-            let pistasRestantes = 3;
-            let hintTimeout = null;
-
-            // Sistema de progresión
-            let nivelActual = 1;
-            let monedas = 0;
-            let totalPistasCompradas = 0;
-            let palabrasUsadasGlobal = {};
-
-            // Timer
-            let timerInterval = null;
-            let tiempoRestante = 300;
-            let timerActivo = false;
-            let juegoTerminado = false;
-            let juegoPerdido = false;
-
-            // ============================================================
-            // PERSISTENCIA DE DATOS
-            // ============================================================
-            function cargarDatos() {
-                try {
-                    const data = JSON.parse(localStorage.getItem('sopaPDHv2') || '{}');
-                    nivelActual = data.nivel || 1;
-                    monedas = data.monedas || 0;
-                    totalPistasCompradas = data.pistasCompradas || 0;
-                    palabrasUsadasGlobal = data.palabrasUsadas || {};
-                } catch (e) {
-                    nivelActual = 1;
-                    monedas = 0;
-                    totalPistasCompradas = 0;
-                    palabrasUsadasGlobal = {};
-                }
-                actualizarUI();
-            }
-
-            function guardarDatos() {
-                try {
-                    localStorage.setItem('sopaPDHv2', JSON.stringify({
-                        nivel: nivelActual,
-                        monedas: monedas,
-                        pistasCompradas: totalPistasCompradas,
-                        palabrasUsadas: palabrasUsadasGlobal
-                    }));
-                } catch (e) {}
-            }
-
-            function actualizarUI() {
-                document.getElementById('coinsDisplay').textContent = monedas;
-                document.getElementById('levelIndicator').textContent = '🎯 Nivel ' + nivelActual;
-                document.getElementById('pistasRestantes').textContent = pistasRestantes;
-                document.getElementById('btnHint').disabled = pistasRestantes <= 0;
-            }
-
-            // ============================================================
-            // TIENDA Y ANUNCIOS
-            // ============================================================
-            function toggleShop() {
-                const modal = document.getElementById('shopModal');
-                modal.classList.toggle('active');
-                if (modal.classList.contains('active')) {
-                    document.getElementById('shopCoins').textContent = monedas;
-                    document.getElementById('shopPistas').textContent = pistasRestantes;
-                }
-            }
-
-            function comprarPista() {
-                if (monedas >= 2000) {
-                    monedas -= 2000;
-                    pistasRestantes++;
-                    totalPistasCompradas++;
-                    guardarDatos();
-                    actualizarUI();
-                    document.getElementById('shopCoins').textContent = monedas;
-                    document.getElementById('shopPistas').textContent = pistasRestantes;
-                    const msg = document.getElementById('message');
-                    msg.className = 'message success';
-                    msg.textContent = '✅ ¡Pista comprada! Tienes ' + pistasRestantes + ' pistas.';
-                    sound.select();
-                } else {
-                    alert('❌ No tienes suficientes monedas. Necesitas 2000 🪙\n\nTienes: ' + monedas + ' 🪙');
-                }
-            }
-
-            function verAnuncio() {
-                const confirmar = confirm(
-                    '📺 ¿Ver anuncio para ganar 500 monedas?\n\n(En producción se mostrará un anuncio real de AdMob)');
-                if (confirmar) {
-                    setTimeout(() => {
-                        monedas += 500;
-                        guardarDatos();
-                        actualizarUI();
-                        document.getElementById('shopCoins').textContent = monedas;
-                        const msg = document.getElementById('message');
-                        msg.className = 'message success';
-                        msg.textContent = '📺 +500 monedas por ver el anuncio. ¡Gracias!';
-                        sound.select();
-                    }, 1000);
-                }
-            }
-
-            window.toggleShop = toggleShop;
-            window.comprarPista = comprarPista;
-            window.verAnuncio = verAnuncio;
-
-            // ============================================================
-            // TIMER CON TIEMPOS POR NIVEL
-            // ============================================================
-            function getTiempoPorNivel(nivel) {
-                return { facil: 300, normal: 600, dificil: 1080, superDificil: 1200 } [nivel] || 300;
-            }
-
-            function formatearTiempo(segundos) {
-                const min = Math.floor(segundos / 60);
-                const seg = segundos % 60;
-                return String(min).padStart(2, '0') + ':' + String(seg).padStart(2, '0');
-            }
-
-            function iniciarTimer() {
-                if (timerInterval) clearInterval(timerInterval);
-                const nivel = document.getElementById('nivelSelect').value;
-                tiempoRestante = getTiempoPorNivel(nivel);
-                actualizarTimerDisplay();
-                document.getElementById('timerDisplay').classList.add('active');
-                document.getElementById('timerDisplay').classList.remove('warning');
-                timerActivo = true;
-                juegoTerminado = false;
-                juegoPerdido = false;
-
-                timerInterval = setInterval(() => {
-                    tiempoRestante--;
-                    actualizarTimerDisplay();
-
-                    if (tiempoRestante <= 30 && tiempoRestante > 0) {
-                        document.getElementById('timerDisplay').classList.add('warning');
-                    }
-
-                    if (tiempoRestante <= 0) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
-                        timerActivo = false;
-                        juegoTerminado = true;
-                        juegoPerdido = true;
-
-                        document.getElementById('timerDisplay').classList.remove('warning');
-                        const msg = document.getElementById('message');
-                        msg.className = 'message lose';
-                        msg.textContent = '⏰ ¡SE ACABÓ EL TIEMPO! Perdiste. Inténtalo de nuevo. 🔄';
-
-                        monedas = Math.max(0, monedas - 100);
-                        guardarDatos();
-                        actualizarUI();
-
-                        sound.lose();
-
-                        document.getElementById('btnNext').classList.remove('show');
-                    }
-                }, 1000);
-            }
-
-            function detenerTimer() {
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
-                }
-                timerActivo = false;
-                document.getElementById('timerDisplay').classList.remove('active', 'warning');
-            }
-
-            function actualizarTimerDisplay() {
-                document.getElementById('timerText').textContent = formatearTiempo(tiempoRestante);
-            }
-
-            // ============================================================
-            // PARTÍCULAS
-            // ============================================================
-            function crearParticulas() {
-                const container = document.getElementById('particles');
-                container.innerHTML = '';
-                const frag = document.createDocumentFragment();
-                for (let i = 0; i < 20; i++) {
-                    const p = document.createElement('div');
-                    p.className = 'particle';
-                    p.style.left = Math.random() * 100 + '%';
-                    const s = Math.random() * 2 + 1;
-                    p.style.width = s + 'px';
-                    p.style.height = s + 'px';
-                    p.style.animationDuration = (Math.random() * 15 + 10) + 's';
-                    p.style.animationDelay = (Math.random() * 15) + 's';
-                    frag.appendChild(p);
-                }
-                container.appendChild(frag);
-            }
-            crearParticulas();
-
-            // ============================================================
-            // SISTEMA DE NO REPETICIÓN DE PALABRAS
-            // ============================================================
-            function obtenerPalabrasSinRepetir(tema, cantidad) {
-                const poolCompleto = palabrasPorTema[tema] || palabrasPorTema.animales;
-
-                if (!palabrasUsadasGlobal[tema]) {
-                    palabrasUsadasGlobal[tema] = [];
-                }
-
-                const usadas = palabrasUsadasGlobal[tema];
-                const disponibles = poolCompleto.filter(p => !usadas.includes(p));
-
-                if (disponibles.length < cantidad) {
-                    palabrasUsadasGlobal[tema] = [];
-                    guardarDatos();
-                    const shuffled = [...poolCompleto].sort(() => Math.random() - 0.5);
-                    const seleccionadas = shuffled.slice(0, Math.min(cantidad, poolCompleto.length));
-                    palabrasUsadasGlobal[tema] = seleccionadas;
-                    guardarDatos();
-                    return seleccionadas;
-                }
-
-                const shuffled = [...disponibles].sort(() => Math.random() - 0.5);
-                const seleccionadas = shuffled.slice(0, cantidad);
-
-                palabrasUsadasGlobal[tema] = [...usadas, ...seleccionadas];
-                guardarDatos();
-
-                return seleccionadas;
-            }
-
-            // ============================================================
-            // FUNCIONES PRINCIPALES
-            // ============================================================
-            function getSizeByNivel(nivel) {
-                return { facil: 8, normal: 10, dificil: 12, superDificil: 14 } [nivel] || 10;
-            }
-
-            function getNumPalabras(nivel) {
-                return { facil: 10, normal: 14, dificil: 20, superDificil: 24 } [nivel] || 14;
-            }
-
-            function generarSopa(tema, nivel) {
-                size = getSizeByNivel(nivel);
-                const numPalabras = getNumPalabras(nivel);
-
-                const palabrasSeleccionadas = obtenerPalabrasSinRepetir(tema, numPalabras);
-
-                grid = Array(size).fill().map(() => Array(size).fill(''));
-                const colocadas = [];
-                const direcciones = [
-                    [0, 1],
-                    [1, 0],
-                    [1, 1],
-                    [1, -1],
-                    [0, -1],
-                    [-1, 0],
-                    [-1, -1],
-                    [-1, 1]
-                ];
-
-                for (const palabra of palabrasSeleccionadas) {
-                    let colocada = false;
-                    const intentosMax = size * size * 8;
-                    for (let intentos = 0; intentos < intentosMax && !colocada; intentos++) {
-                        const dir = direcciones[Math.floor(Math.random() * direcciones.length)];
-                        const row = Math.floor(Math.random() * size);
-                        const col = Math.floor(Math.random() * size);
-                        if (puedeColocar(palabra, row, col, dir)) {
-                            colocarPalabra(palabra, row, col, dir);
-                            colocadas.push(palabra);
-                            colocada = true;
-                        }
-                    }
-                    if (!colocada) {
-                        for (let r = 0; r < size && !colocada; r++) {
-                            for (let c = 0; c < size && !colocada; c++) {
-                                for (const dir of direcciones) {
-                                    if (puedeColocar(palabra, r, c, dir)) {
-                                        colocarPalabra(palabra, r, c, dir);
-                                        colocadas.push(palabra);
-                                        colocada = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                for (let i = 0; i < size; i++) {
-                    for (let j = 0; j < size; j++) {
-                        if (grid[i][j] === '') {
-                            grid[i][j] = letras[Math.floor(Math.random() * letras.length)];
-                        }
-                    }
-                }
-
-                palabras = colocadas;
-                palabrasEncontradas = [];
-                foundSet = new Set();
-                pistasRestantes = 3 + totalPistasCompradas;
-                actualizarUI();
-                document.getElementById('btnNext').classList.remove('show');
-                juegoTerminado = false;
-                juegoPerdido = false;
-
-                return { grid, palabras: colocadas, size };
-            }
-
-            function puedeColocar(palabra, row, col, dir) {
-                const len = palabra.length;
-                const endRow = row + dir[0] * (len - 1);
-                const endCol = col + dir[1] * (len - 1);
-                if (endRow < 0 || endRow >= size || endCol < 0 || endCol >= size) return false;
-                for (let i = 0; i < len; i++) {
-                    const r = row + dir[0] * i;
-                    const c = col + dir[1] * i;
-                    if (grid[r][c] !== '' && grid[r][c] !== palabra[i]) return false;
-                }
-                return true;
-            }
-
-            function colocarPalabra(palabra, row, col, dir) {
-                for (let i = 0; i < palabra.length; i++) {
-                    const r = row + dir[0] * i;
-                    const c = col + dir[1] * i;
-                    grid[r][c] = palabra[i];
-                }
-            }
-
-            // ============================================================
-            // RENDERIZADO
-            // ============================================================
-            function buildFoundSet() {
-                foundSet = new Set();
-                for (const p of palabrasEncontradas) {
-                    for (const c of p.celdas) {
-                        foundSet.add(`${c.row},${c.col}`);
-                    }
-                }
-            }
-
-            function isCellFound(row, col) {
-                return foundSet.has(`${row},${col}`);
-            }
-
-            function isCellSelected(row, col) {
-                return celdasSeleccionadas.some(c => c.row === row && c.col === col);
-            }
-
-            function calcularCellSize(sizeGrid) {
-                const vw = window.innerWidth;
-                const vh = window.innerHeight;
-                const gridWrapper = document.getElementById('gridWrapper');
-                const wrapperWidth = gridWrapper ? gridWrapper.clientWidth - 20 : vw - 40;
-                let cellSize = Math.floor(wrapperWidth / sizeGrid);
-
-                if (vw >= 768) {
-                    cellSize = Math.min(cellSize, 40);
-                    cellSize = Math.max(cellSize, 30);
-                } else if (vw <= 340) {
-                    cellSize = Math.min(cellSize, 20);
-                    cellSize = Math.max(cellSize, 17);
-                } else if (vw <= 380) {
-                    cellSize = Math.min(cellSize, 24);
-                    cellSize = Math.max(cellSize, 19);
-                } else if (vw <= 480) {
-                    cellSize = Math.min(cellSize, 28);
-                    cellSize = Math.max(cellSize, 21);
-                } else {
-                    cellSize = Math.min(cellSize, 34);
-                    cellSize = Math.max(cellSize, 24);
-                }
-
-                return cellSize;
-            }
-
-            function calcularFontSize(cellSize) {
-                return Math.max(0.5, cellSize / 34) + 'rem';
-            }
-
-            function renderizar(fullRender = true) {
-                if (fullRender) buildFoundSet();
-
-                const container = document.getElementById('gridContainer');
-                const gridWrapper = document.getElementById('gridWrapper');
-                const sizeGrid = grid.length;
-
-                const cellSize = calcularCellSize(sizeGrid);
-                const fontSize = calcularFontSize(cellSize);
-
-                container.style.setProperty('--cell-size', cellSize + 'px');
-                container.style.setProperty('--cell-font', fontSize);
-                container.style.gridTemplateColumns = `repeat(${sizeGrid}, var(--cell-size, 34px))`;
-
-                const nivel = document.getElementById('nivelSelect').value;
-                if (nivel === 'superDificil' && window.innerWidth < 480) {
-                    gridWrapper.classList.add('grid-extremo-mobile');
-                    if (window.innerWidth <= 360) {
-                        container.style.setProperty('--cell-size', '19px');
-                        container.style.setProperty('--cell-font', '0.55rem');
-                    } else if (window.innerWidth <= 400) {
-                        container.style.setProperty('--cell-size', '21px');
-                        container.style.setProperty('--cell-font', '0.6rem');
-                    } else {
-                        container.style.setProperty('--cell-size', '23px');
-                        container.style.setProperty('--cell-font', '0.65rem');
-                    }
-                } else {
-                    gridWrapper.classList.remove('grid-extremo-mobile');
-                }
-
-                if (fullRender || container.children.length === 0) {
-                    let html = '';
-                    for (let i = 0; i < sizeGrid; i++) {
-                        for (let j = 0; j < sizeGrid; j++) {
-                            const letra = grid[i][j] || '';
-                            const encontrada = isCellFound(i, j);
-                            const seleccionada = isCellSelected(i, j);
-                            let clase = 'cell';
-                            if (encontrada) clase += ' found';
-                            if (seleccionada) clase += ' selected';
-                            html +=
-                                `<div class="${clase}" data-row="${i}" data-col="${j}" style="will-change:transform,background">${letra}</div>`;
-                        }
-                    }
-                    container.innerHTML = html;
-                    attachCellEvents(container);
-                } else {
-                    const cells = container.children;
-                    let idx = 0;
-                    for (let i = 0; i < sizeGrid; i++) {
-                        for (let j = 0; j < sizeGrid; j++) {
-                            if (idx >= cells.length) break;
-                            const cell = cells[idx];
-                            const encontrada = isCellFound(i, j);
-                            const seleccionada = isCellSelected(i, j);
-                            let clase = 'cell';
-                            if (encontrada) clase += ' found';
-                            if (seleccionada) clase += ' selected';
-                            if (cell.className !== clase) cell.className = clase;
-                            idx++;
-                        }
-                    }
-                }
-
-                renderizarPalabras();
-                actualizarStats();
-            }
-
-            function attachCellEvents(container) {
-                const cells = container.querySelectorAll('.cell');
-                cells.forEach(cell => {
-                    const row = parseInt(cell.dataset.row);
-                    const col = parseInt(cell.dataset.col);
-
-                    cell.addEventListener('pointerdown', (e) => {
-                        if (juegoPerdido) return;
-                        e.preventDefault();
-                        sound.resume();
-                        cell.setPointerCapture(e.pointerId);
-                        iniciarSeleccion(row, col);
-                    });
-
-                    cell.addEventListener('pointermove', (e) => {
-                        if (!isSelecting) return;
-                        e.preventDefault();
-                        const el = document.elementFromPoint(e.clientX, e.clientY);
-                        if (el && el.classList.contains('cell')) {
-                            const r = parseInt(el.dataset.row);
-                            const c = parseInt(el.dataset.col);
-                            if (!isNaN(r) && !isNaN(c)) agregarSeleccion(r, c);
-                        }
-                    });
-
-                    cell.addEventListener('pointerup', (e) => {
-                        if (isSelecting) { e.preventDefault();
-                            finalizarSeleccion(); }
-                    });
-
-                    cell.addEventListener('pointercancel', () => {
-                        if (isSelecting) finalizarSeleccion();
-                    });
-
-                    cell.addEventListener('touchstart', (e) => {
-                        if (juegoPerdido) return;
-                        if (!isSelecting) {
-                            e.preventDefault();
-                            sound.resume();
-                            iniciarSeleccion(row, col);
-                        }
-                    }, { passive: false });
-
-                    cell.addEventListener('touchmove', (e) => {
-                        if (!isSelecting) return;
-                        e.preventDefault();
-                        const touch = e.touches[0];
-                        if (touch) {
-                            const el = document.elementFromPoint(touch.clientX, touch.clientY);
-                            if (el && el.classList.contains('cell')) {
-                                const r = parseInt(el.dataset.row);
-                                const c = parseInt(el.dataset.col);
-                                if (!isNaN(r) && !isNaN(c)) agregarSeleccion(r, c);
-                            }
-                        }
-                    }, { passive: false });
-
-                    cell.addEventListener('touchend', (e) => {
-                        if (isSelecting) { e.preventDefault();
-                            finalizarSeleccion(); }
-                    });
-                });
-            }
-
-            document.addEventListener('pointerup', () => { if (isSelecting) finalizarSeleccion(); });
-            document.addEventListener('pointercancel', () => { if (isSelecting) finalizarSeleccion(); });
-
-            let resizeTimeout;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(() => {
-                    if (grid.length > 0) {
-                        renderizar(true);
-                    }
-                }, 250);
-            });
-
-            window.addEventListener('orientationchange', () => {
-                setTimeout(() => {
-                    if (grid.length > 0) {
-                        renderizar(true);
-                    }
-                }, 400);
-            });
-
-            function renderizarPalabras() {
-                const list = document.getElementById('wordList');
-                const encontradasSet = new Set(palabrasEncontradas.map(p => p.palabra));
-                let html = '';
-                for (const palabra of palabras) {
-                    const encontrada = encontradasSet.has(palabra);
-                    html +=
-                        `<span class="word-item ${encontrada ? 'found-word' : ''}">${palabra}${encontrada ? ' ✅' : ''}</span>`;
-                }
-                list.innerHTML = html;
-            }
-
-            function actualizarStats() {
-                const total = palabras.length;
-                const encont = palabrasEncontradas.length;
-                document.getElementById('encontradas').textContent = encont;
-                document.getElementById('totalPalabras').textContent = total;
-                const pct = total > 0 ? Math.round((encont / total) * 100) : 0;
-                document.getElementById('progreso').textContent = pct + '%';
-
-                const msg = document.getElementById('message');
-                if (encont === total && total > 0 && !juegoTerminado && !juegoPerdido) {
-                    if (timerActivo) detenerTimer();
-                    juegoTerminado = true;
-
-                    const nivel = document.getElementById('nivelSelect').value;
-                    let monedasBase = { facil: 50, normal: 100, dificil: 150, superDificil: 200 } [nivel] || 100;
-                    let monedasGanadas = monedasBase;
-
-                    if (document.getElementById('timerToggle').checked && tiempoRestante > 0) {
-                        const tiempoBonus = Math.floor(tiempoRestante / 30) * 10;
-                        monedasGanadas += tiempoBonus;
-                    }
-
-                    monedas += monedasGanadas;
-                    nivelActual++;
-                    guardarDatos();
-                    actualizarUI();
-
-                    msg.className = 'message win';
-                    msg.textContent = '🎉 ¡NIVEL COMPLETADO! +' + monedasGanadas +
-                        ' 🪙 | ¡Pasa al siguiente nivel! 🏆';
-                    sound.win();
-
-                    document.getElementById('btnNext').classList.add('show');
-                    document.getElementById('btnNext').onclick = siguienteNivel;
-                }
-            }
-
-            function siguienteNivel() {
-                detenerTimer();
-                document.getElementById('btnNext').classList.remove('show');
-                iniciarJuego(true);
-            }
-
-            // ============================================================
-            // SELECCIÓN MEJORADA
-            // ============================================================
-            function normalizarDireccion(dRow, dCol) {
-                const absR = Math.abs(dRow);
-                const absC = Math.abs(dCol);
-                if (absR === 0 && absC === 0) return null;
-                if (absR === 0) return [0, dCol > 0 ? 1 : -1];
-                if (absC === 0) return [dRow > 0 ? 1 : -1, 0];
-                const ratio = absR / absC;
-                if (ratio > 1.8) return [dRow > 0 ? 1 : -1, 0];
-                if (ratio < 0.55) return [0, dCol > 0 ? 1 : -1];
-                return [dRow > 0 ? 1 : -1, dCol > 0 ? 1 : -1];
-            }
-
-            function iniciarSeleccion(row, col) {
-                if (juegoPerdido) return;
-                isSelecting = true;
-                startRow = row;
-                startCol = col;
-                lastSelectedRow = row;
-                lastSelectedCol = col;
-                directionLock = null;
-                celdasSeleccionadas = [{ row, col }];
-                sound.select();
-                renderizar(false);
-            }
-
-            function agregarSeleccion(row, col) {
-                if (!isSelecting) return;
-                if (row === lastSelectedRow && col === lastSelectedCol) return;
-
-                if (directionLock === null && celdasSeleccionadas.length === 1) {
-                    const dRow = row - startRow;
-                    const dCol = col - startCol;
-                    if (Math.abs(dRow) <= 0 && Math.abs(dCol) <= 0) return;
-                    const dir = normalizarDireccion(dRow, dCol);
-                    if (dir === null) return;
-                    directionLock = dir;
-                }
-
-                if (directionLock === null) return;
-
-                const [dr, dc] = directionLock;
-                const dRow = row - startRow;
-                const dCol = col - startCol;
-
-                let enLinea = false;
-                if (dr === 0) enLinea = (dRow === 0 && Math.sign(dCol) === Math.sign(dc));
-                else if (dc === 0) enLinea = (dCol === 0 && Math.sign(dRow) === Math.sign(dr));
-                else enLinea = (Math.abs(dRow) === Math.abs(dCol) && Math.sign(dRow) === Math.sign(dr) && Math.sign(dCol) ===
-                    Math.sign(dc));
-                if (!enLinea) return;
-
-                const lastR = lastSelectedRow;
-                const lastC = lastSelectedCol;
-                const steps = Math.max(Math.abs(row - lastR), Math.abs(col - lastC));
-                if (steps === 0) return;
-
-                for (let s = 1; s <= steps; s++) {
-                    const r = lastR + dr * s;
-                    const c = lastC + dc * s;
-                    if (r < 0 || r >= size || c < 0 || c >= size) continue;
-                    if (celdasSeleccionadas.some(sel => sel.row === r && sel.col === c)) continue;
-                    celdasSeleccionadas.push({ row: r, col: c });
-                    if (s === steps) sound.select();
-                }
-                lastSelectedRow = row;
-                lastSelectedCol = col;
-                renderizar(false);
-            }
-
-            function finalizarSeleccion() {
-                if (!isSelecting) return;
-                isSelecting = false;
-
-                const seleccion = [...celdasSeleccionadas];
-                celdasSeleccionadas = [];
-                directionLock = null;
-                lastSelectedRow = -1;
-                lastSelectedCol = -1;
-
-                if (seleccion.length < 3) { renderizar(false); return; }
-
-                const letras = seleccion.map(c => grid[c.row][c.col]).join('');
-                const letrasReversa = letras.split('').reverse().join('');
-
-                let palabraEncontrada = null;
-                for (const p of palabras) {
-                    if (!palabrasEncontradas.some(pal => pal.palabra === p)) {
-                        if (letras === p || letrasReversa === p) { palabraEncontrada = p; break; }
-                    }
-                }
-
-                if (palabraEncontrada) {
-                    palabrasEncontradas.push({ palabra: palabraEncontrada, celdas: seleccion });
-                    sound.found();
-                    const msg = document.getElementById('message');
-                    msg.className = 'message success';
-                    msg.textContent = '✅ ¡Encontraste "' + palabraEncontrada + '"! 🎯';
-                    renderizar(true);
-                } else {
-                    sound.error();
-                    const msg = document.getElementById('message');
-                    msg.className = 'message warning';
-                    msg.textContent = '❌ No forma una palabra válida. Intenta de nuevo.';
-                    renderizar(false);
-                    setTimeout(() => {
-                        if (palabrasEncontradas.length < palabras.length && !juegoPerdido &&
-                            !document.getElementById('message').classList.contains('win')) {
-                            const msg2 = document.getElementById('message');
-                            msg2.className = 'message info';
-                            msg2.textContent = '🔍 Encuentra las ' + palabras.length +
-                                ' palabras. Arrastra en línea recta.';
-                        }
-                    }, 1000);
-                }
-            }
-
-            // ============================================================
-            // SISTEMA DE PISTAS
-            // ============================================================
-            function usarPista() {
-                if (pistasRestantes <= 0) {
-                    const msg = document.getElementById('message');
-                    msg.className = 'message warning';
-                    msg.textContent = '💡 No te quedan pistas. ¡Compra más en la tienda! 🛒';
-                    return;
-                }
-
-                const encontradasSet = new Set(palabrasEncontradas.map(p => p.palabra));
-                const noEncontradas = palabras.filter(p => !encontradasSet.has(p));
-                if (noEncontradas.length === 0) return;
-
-                const palabraElegida = noEncontradas[Math.floor(Math.random() * noEncontradas.length)];
-                const coords = buscarPalabraEnGrid(palabraElegida);
-                if (!coords || coords.length === 0) return;
-
-                const container = document.getElementById('gridContainer');
-                const cells = container.querySelectorAll('.cell');
-                cells.forEach(c => c.classList.remove('hint'));
-                for (const [r, c] of coords) {
-                    const idx = r * size + c;
-                    if (cells[idx]) cells[idx].classList.add('hint');
-                }
-
-                sound.hint();
-                pistasRestantes--;
-                actualizarUI();
-
-                const msg = document.getElementById('message');
-                msg.className = 'message info';
-                msg.textContent = '💡 Pista: busca "' + palabraElegida + '" (naranja)';
-
-                if (hintTimeout) clearTimeout(hintTimeout);
-                hintTimeout = setTimeout(() => {
-                    cells.forEach(c => c.classList.remove('hint'));
-                }, 1800);
-            }
-
-            function buscarPalabraEnGrid(palabra) {
-                const len = palabra.length;
-                const dirs = [
-                    [0, 1],
-                    [1, 0],
-                    [1, 1],
-                    [1, -1],
-                    [0, -1],
-                    [-1, 0],
-                    [-1, -1],
-                    [-1, 1]
-                ];
-                for (let r = 0; r < size; r++) {
-                    for (let c = 0; c < size; c++) {
-                        for (const [dr, dc] of dirs) {
-                            let ok = true;
-                            let coords = [];
-                            for (let i = 0; i < len; i++) {
-                                const nr = r + dr * i;
-                                const nc = c + dc * i;
-                                if (nr < 0 || nr >= size || nc < 0 || nc >= size || grid[nr][nc] !== palabra[
-                                        i]) { ok = false; break; }
-                                coords.push([nr, nc]);
-                            }
-                            if (ok) return coords;
-                        }
-                    }
-                }
-                return null;
-            }
-
-            // ============================================================
-            // INICIAR JUEGO
-            // ============================================================
-            function iniciarJuego(esSiguienteNivel = false) {
-                if (hintTimeout) { clearTimeout(hintTimeout);
-                    hintTimeout = null; }
-                detenerTimer();
-
-                const tema = document.getElementById('temaSelect').value;
-                const nivel = document.getElementById('nivelSelect').value;
-                const usarTimer = document.getElementById('timerToggle').checked;
-
-                const result = generarSopa(tema, nivel);
-                grid = result.grid;
-                palabras = result.palabras;
-                palabrasEncontradas = [];
-                celdasSeleccionadas = [];
-                isSelecting = false;
-                directionLock = null;
-                foundSet = new Set();
-                lastSelectedRow = -1;
-                lastSelectedCol = -1;
-                juegoTerminado = false;
-                juegoPerdido = false;
-
-                actualizarUI();
-                document.getElementById('btnNext').classList.remove('show');
-
-                const container = document.getElementById('gridContainer');
-                if (container) container.querySelectorAll('.cell.hint').forEach(c => c.classList.remove('hint'));
-
-                const msg = document.getElementById('message');
-                msg.className = 'message info';
-                msg.textContent = '🔍 Busca ' + palabras.length + ' palabras | Nivel ' + nivelActual + ' | Tema: ' +
-                    tema;
-
-                if (usarTimer) {
-                    iniciarTimer();
-                    msg.textContent += ' | ⏱️ ' + formatearTiempo(tiempoRestante);
-                } else {
-                    document.getElementById('timerDisplay').classList.remove('active', 'warning');
-                }
-
-                renderizar(true);
-                document.getElementById('totalPalabras').textContent = palabras.length;
-            }
-
-            // ============================================================
-            // EVENT LISTENERS
-            // ============================================================
-            document.getElementById('btnJugar').addEventListener('click', () => {
-                sound.resume();
-                if (!juegoTerminado && !juegoPerdido && palabrasEncontradas.length > 0) {
-                    if (!confirm('¿Empezar nuevo juego? Se reiniciará el nivel actual.')) return;
-                }
-                nivelActual = 1;
-                palabrasUsadasGlobal = {};
-                guardarDatos();
-                iniciarJuego();
-            });
-
-            document.getElementById('btnReset').addEventListener('click', () => {
-                sound.resume();
-                iniciarJuego();
-                const msg = document.getElementById('message');
-                msg.className = 'message info';
-                msg.textContent = '🔄 Juego reiniciado. ¡Suerte!';
-            });
-
-            document.getElementById('btnHint').addEventListener('click', () => {
-                sound.resume();
-                usarPista();
-            });
-
-            document.getElementById('gridWrapper').addEventListener('touchmove', (e) => {
-                if (isSelecting) e.preventDefault();
-            }, { passive: false });
-
-            document.addEventListener('pointerdown', () => sound.resume(), { passive: true });
-            document.addEventListener('touchstart', () => sound.resume(), { passive: true });
-
-            // ============================================================
-            // INICIALIZACIÓN
-            // ============================================================
-            document.getElementById('nivelSelect').value = 'normal';
-            document.getElementById('temaSelect').value = 'animales';
-            cargarDatos();
-            iniciarJuego();
-
-            console.log('🔍 SOPA DE LETRAS PDH v3.1 - SAMUEL PDH');
-            console.log('✅ Fondo blanco en la sopa de letras');
-            console.log('✅ Celdas adaptativas para modo Extremo en móvil');
-            console.log('✅ 50+ palabras por categoría');
-            console.log('✅ Sin repetición entre niveles');
-            console.log('✅ Timer: 5min(Fácil) 10min(Normal) 18min(Difícil) 20min(Extremo)');
-            console.log('✅ Sistema de monedas y tienda');
-        })();
-    </script>
+<canvas id="bg"></canvas><canvas id="fx"></canvas>
+
+<section id="splash" class="scr on">
+ <div class="logo">S_PDH</div><div class="sub">Sopa de letras</div>
+ <div class="tap">Toca para continuar</div>
+</section>
+
+<section id="menu" class="scr">
+ <div class="hdr"><div class="logo sm">S_PDH</div><div class="sub">Sopa de letras</div></div>
+ <div class="pn me">
+  <button class="lv" id="lv" aria-label="Ver medallas"></button>
+  <div class="xp"><b id="rk">Novato</b><small id="xpt"></small><div class="xb"><i id="xpb"></i></div></div>
+  <div class="rs"><div><small>Monedas</small><b id="co">0</b></div><div><small>Racha</small><b id="sk">0</b></div></div>
+ </div>
+ <div class="pn">
+  <div class="sec"><div class="lbl">Tema</div><div class="dd" id="cats"></div></div>
+  <div class="sec"><div class="lbl">Dificultad</div><div class="opts modes" id="modes"></div></div>
+  <div class="sec"><div class="tgs" id="opts"></div></div>
+  <div class="sec"><div class="qa"><button class="btn" id="shopB">Tienda</button></div><button class="go" id="play">Jugar sopa de letras</button><button class="go alt" id="quizB">¿Quieres ver qué tanto sabes?</button></div>
+ </div>
+ <div class="lks"><button class="lk" id="prB">Privacidad</button><button class="lk" id="teB">Términos</button><button class="lk" id="crb">Créditos</button></div>
+</section>
+
+<section id="game" class="scr">
+ <div class="bar">
+  <button class="btn" id="back">Menú</button>
+  <div class="t"><b id="gT"></b><small id="gS"></small></div>
+  <div class="chip"><small>Puntos</small><b id="sc">0</b></div>
+  <div class="chip" id="cT"><small>Tiempo</small><b id="tm">00:00</b></div>
+  <div class="chip g"><small>Monedas</small><b id="cg">0</b></div>
+  <button class="btn" id="mu">Música</button>
+ </div>
+ <div class="cmb" id="cmb"><span id="cb"></span><div><i id="cbf"></i></div></div>
+ <div class="main">
+  <div class="frame"><div class="bw"><svg id="ov" class="ov"></svg><div class="board" id="board"></div></div></div>
+  <div class="pn side">
+   <div class="hd"><span>Palabras</span><b id="pg"></b></div>
+   <ul class="wl" id="wl"></ul>
+   <div class="acts"><button class="hintb" id="hint" aria-label="Usar una pista"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="bl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe86a"/><stop offset="1" stop-color="#f6a81f"/></linearGradient></defs><path d="M24 6c-6.8 0-12 5-12 11.2 0 4.1 2 6.8 4.1 8.8 1.3 1.3 2 2.6 2 4.2h11.8c0-1.6.7-2.9 2-4.2 2.1-2 4.1-4.7 4.1-8.8C36 11 30.800 6 24 6z" fill="url(#bl)"/><path d="M20 17.500c.6-2.700 2.500-4.200 4.600-4.500" stroke="#fff9cf" stroke-width="2.200" fill="none" stroke-linecap="round" opacity=".85"/><rect x="18.500" y="33.500" width="11" height="3.800" rx="1.900" fill="#3b4fa6"/><rect x="20.500" y="38" width="7" height="3.200" rx="1.600" fill="#24327a"/></svg><b id="hb">0</b></button><button class="btn" id="again">Nueva</button></div>
+  </div>
+ </div>
+</section>
+
+<section id="quiz" class="scr">
+ <div class="bar"><button class="btn" id="qBack">Menú</button><div class="t"><b id="qN">Pregunta 1 de 10</b><small id="qC">Correctas: 0</small></div><div class="chip"><small>Tiempo</small><b id="qT">15</b></div></div>
+ <div class="qtm"><i id="qTb"></i></div>
+ <div class="qwrap">
+  <div class="qbox"><span class="qm">”</span><svg class="dice" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 3 59 17v30L32 61 5 47V17z" fill="#e0a92e"/><path d="M32 11 52 22v20L32 53 12 42V22z" fill="#7b2fb5"/><path d="M32 11 52 22 32 33 12 22z" fill="#b66be8"/><path d="M32 33 52 22v20L32 53z" fill="#5e2191"/><text x="16.500" y="42" font-size="17" font-weight="800" fill="#fff" font-family="Nunito,sans-serif">?</text></svg><span id="qQ"></span></div>
+  <div class="qopts" id="qO"></div><p class="qf" id="qF"></p><div class="qll"><button class="btn" id="l50">50/50 (30)</button><button class="btn" id="lT">+5 s (20)</button><button class="btn" id="lS">Saltar (40)</button></div>
+ </div>
+</section>
+
+<div class="modal" id="md"><div class="pn box"><h2>Medallas</h2><h3>Tu camino</h3><div id="mdL"></div><button class="go sm" id="mdX">Cerrar</button></div></div>
+<div class="modal" id="lo"><div class="pn box"><h2>Contra reloj</h2><h3>Se acabó el tiempo</h3><p class="qbig" id="loS"></p><div class="acts"><button class="btn" id="loM">Menú</button><button class="go sm" id="loA">Intentar otra vez</button></div></div></div>
+<div class="modal" id="qm"><div class="pn box"><h2>Preguntas</h2><h3>Elige la dificultad</h3><div class="opts" id="qLv"></div><button class="btn" id="qmX" style="margin-top:14px">Cancelar</button></div></div>
+<div class="modal" id="qr"><div class="pn box"><h2>Resultado</h2><h3 id="qrT"></h3><p class="qbig" id="qrS"></p>
+ <div class="st"><div><small>Correctas</small><b id="qrC">0</b></div><div><small>Incorrectas</small><b id="qrW">0</b></div><div><small>Récord</small><b id="qrB">0</b></div></div>
+ <p class="rw" id="qrX"></p><div class="acts"><button class="btn" id="qrM">Menú</button><button class="go sm" id="qrA">Jugar otra</button></div></div></div>
+
+<div class="modal" id="win"><div class="pn box">
+ <h2>Tablero completado</h2><h3 id="wTitle"></h3>
+ <div class="stars" id="stars"><i></i><i></i><i></i></div>
+ <div class="st"><div><small>Puntos</small><b id="wS">0</b></div><div><small>Tiempo</small><b id="wT">--</b></div><div><small>Récord</small><b id="wB">0</b></div></div>
+ <p class="rw" id="wX"></p><p class="lu" id="wL"></p>
+ <div class="acts"><button class="btn" id="wMenu">Menú</button><button class="go sm" id="wAgain">Jugar otra</button></div>
+</div></div>
+
+<div class="modal" id="shop"><div class="pn box" style="width:min(440px,100%)"><h2>Tienda</h2><h3>Monedas: <span id="shC" style="color:var(--gd)">0</span></h3><div id="shopL"></div><button class="go sm" id="shX">Cerrar</button></div></div>
+
+<div class="modal" id="lg"><div class="pn box"><h3 id="lgT"></h3><div id="lgB"></div><button class="go sm" id="lgX">Cerrar</button></div></div>
+<div class="modal" id="cr"><div class="pn box crd">
+ <h3>Word Search</h3><p class="mu">A quiet puzzle for any time of day</p>
+ <dl>
+  <dt>Game design and programming</dt><dd>Samuel PDH</dd>
+  <dt>Art direction</dt><dd>Samuel PDH</dd>
+  <dt>Landscapes</dt><dd>Original scenes generated in the game: dawn, sunset, dusk, forests, lakes, mountains and aurora</dd>
+  <dt>Music</dt><dd>Original ambient pieces, generated in the game</dd><dt>Quiz content</dt><dd>Original questions written from general knowledge</dd><dt>Typefaces</dt><dd>Playfair Display and Nunito, SIL Open Font License, via Google Fonts</dd>
+  <dt>Made in</dt><dd>Colombia</dd>
+  <dt>Thank you</dt><dd>To every player who takes the time to play</dd>
+ </dl>
+ <p class="lg">© 2026 Samuel PDH. All rights reserved.</p>
+ <button class="go sm" id="crx">Close</button>
+</div></div>
+
+<script>
+(()=>{
+"use strict";
+const DB={
+animales:{n:"Animales",d:"Fauna del mundo",k:"#ff9a5a",w:`PERRO GATO LEÓN TIGRE JIRAFA ELEFANTE CEBRA HIPOPÓTAMO RINOCERONTE CANGURO
+LIEBRE ARDILLA CASTOR NUTRIA FOCA MORSA DELFÍN BALLENA TIBURÓN ORCA
+COCODRILO CAIMÁN SERPIENTE COBRA VÍBORA LAGARTIJA GECKO RANA SAPO SALAMANDRA
+ÁGUILA HALCÓN BÚHO LECHUZA LORO GUACAMAYO TUCÁN PINGÜINO FLAMENCO PELÍCANO
+ABEJA AVISPA HORMIGA MARIPOSA LIBÉLULA ESCARABAJO GRILLO SALTAMONTES MOSCA MOSQUITO`},
+objetos:{n:"Objetos",d:"Cosas del día a día",k:"#6fb4ff",w:`MESA SILLA SOFÁ CAMA ARMARIO ESCRITORIO LÁMPARA ESPEJO ALFOMBRA CORTINA
+ALMOHADA SÁBANA COBIJA RELOJ TELÉFONO COMPUTADORA TECLADO MOUSE PANTALLA AURICULARES
+MICROONDAS LICUADORA TOSTADORA HORNO SARTÉN OLLA CUCHARA TENEDOR CUCHILLO PLATO
+MARTILLO CLAVO TORNILLO DESTORNILLADOR TALADRO SERRUCHO ALICATE ESCALERA CUERDA CADENA
+BICICLETA PATINETA BALÓN PELOTA RAQUETA TIMBRE BRÚJULA MAPA TELESCOPIO MICROSCOPIO`},
+comidas:{n:"Comidas",d:"Platos, frutas y postres",k:"#ffd36b",w:`PIZZA HAMBURGUESA TACO BURRITO EMPANADA AREPA TAMAL CEVICHE PAELLA RAVIOLI
+MANZANA PERA PLÁTANO BANANA NARANJA MANDARINA LIMÓN UVA FRESA CEREZA
+SANDÍA MELÓN ANANÁ MANGO PAPAYA AGUACATE COCO KIWI DURAZNO CIRUELA
+ARROZ FRIJOL LENTEJA GARBANZO PAN QUESO JAMÓN TOCINO SALCHICHA CHORIZO
+CHOCOLATE HELADO PASTEL GALLETA DONA BROWNIE FLAN GELATINA TURRÓN CARAMELO`},
+musica:{n:"Música",d:"Instrumentos y géneros",k:"#c99bff",w:`GUITARRA PIANO VIOLÍN VIOLONCHELO CONTRABAJO ARPA FLAUTA CLARINETE OBOE FAGOT
+TIMBAL MARACAS GÜIRO CLAVES PANDERETA XILÓFONO MARIMBA ACORDEÓN ARMÓNICA ÓRGANO
+ROCK POP JAZZ BLUES SALSA MERENGUE BACHATA CUMBIA REGGAETON RAP
+HIPHOP TRAP TECHNO HOUSE DISCO FUNK SOUL REGGAE SKA PUNK
+CORRIDO SAMBA BOSSANOVA OPERA SINFONÍA CONCIERTO SONATA BALADA ÁLBUM CANCIÓN`},
+famosos:{n:"Famosos",d:"Leyendas de todo tipo",k:"#ff7a8f",w:`MESSI RONALDO NEYMAR MBAPPÉ MARADONA PELÉ CRUYFF ZIDANE BECKHAM HENRY
+EINSTEIN NEWTON DARWIN GALILEO TESLA EDISON CURIE HAWKING PASTEUR FREUD
+PICASSO DALÍ FRIDA VELÁZQUEZ GOYA MONET VANGOGH LEONARDO MIGUELÁNGEL REMBRANDT
+BEETHOVEN MOZART BACH CHOPIN VIVALDI SHAKIRA MADONNA BEYONCÉ RIHANNA ADELE
+CHAPLIN SPIELBERG HITCHCOCK KUBRICK TARANTINO DISNEY SCORSESE NOLAN CAMERON COPPOLA`},
+lugares:{n:"Mundo",d:"Países y ciudades",k:"#5fe0c8",w:`MÉXICO COLOMBIA ARGENTINA CHILE PERÚ BRASIL URUGUAY PARAGUAY BOLIVIA ECUADOR
+FRANCIA ITALIA ALEMANIA INGLATERRA IRLANDA ESCOCIA HOLANDA BÉLGICA SUIZA AUSTRIA
+CHINA JAPÓN COREA INDIA TAILANDIA VIETNAM INDONESIA FILIPINAS MONGOLIA NEPAL
+EGIPTO MARRUECOS ARGELIA KENIA ETIOPÍA NIGERIA GHANA SENEGAL ANGOLA SUDÁFRICA
+LONDRES PARÍS ROMA MADRID BERLÍN LISBOA ÁMSTERDAM VIENA PRAGA ATENAS`}
+};
+const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+const seen=new Set();
+for(const k in DB)DB[k].list=DB[k].w.trim().split(/\s+/).filter(w=>{const x=norm(w);if(seen.has(x))return false;seen.add(x);return true});
+const MODES={
+ facil:{n:"Fácil",d:"10x10, 8 palabras",i:0,s:10,w:8,max:8,dirs:[[0,1],[1,0]]},
+ medio:{n:"Medio",d:"13x13, 12 palabras, diagonales",i:1,s:13,w:12,max:10,dirs:[[0,1],[1,0],[1,1],[-1,1]]},
+ dificil:{n:"Difícil",d:"16x16, 16 palabras, al revés",i:2,s:16,w:16,max:14,dirs:[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]]}
+};
+const $=id=>document.getElementById(id),rnd=n=>Math.floor(Math.random()*n);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const SV=Object.assign({xp:0,coins:40,streak:0,last:"",best:{}},ls.get("spdh_v2",{}));
+SV.o=Object.assign({t:false,s:true,v:true,m:true},SV.o);SV.hp=SV.hp==null?3:SV.hp;
+SV.own=Object.assign({cap:["clasico"],fx:["chispas"]},SV.own);SV.eq=Object.assign({cap:"clasico",fx:"chispas"},SV.eq);
+const save=()=>ls.set("spdh_v2",SV);
+const st={cat:"animales",mode:"facil"};
+const CMB=8000,SC=[523,587,659,784,880,1047,1175];
+
+/* ---------- paisajes ---------- */
+const SCN=[
+{n:"Amanecer",m:0,sky:["#3b3b78","#a0689a","#f2a07d","#ffe0a8"],sun:[.5,.57,.07,"255,236,190"],ly:["#8a6f9c","#62507f","#3d3a63"],tr:"#2a2e4f",mist:"255,214,190"},
+{n:"Atardecer",m:1,sky:["#2b1d52","#a3436a","#ef7a4e","#ffc068"],sun:[.28,.58,.08,"255,214,150"],ly:["#8a4560","#5b2c52","#34203f"],tr:"#1c1230",mist:"255,170,130"},
+{n:"Anochecer",m:2,sky:["#060a1c","#16224d","#2f3f7d","#566aa5"],sun:[.74,.2,.045,"232,238,255"],st:1,ly:["#2b3b72","#1c2a56","#0f1835"],lake:1,tr:"#070d20",mist:"120,140,200"},
+{n:"Bosque en calma",m:3,sky:["#8fb8a8","#bcd6c0","#e6ead2"],sun:[.68,.22,.06,"255,250,220"],ly:["#86aa94","#5f8b76","#3b6656"],tr:"#244538",mist:"235,242,225"},
+{n:"Lago de montaña",m:0,sky:["#3f6f9e","#86b4d0","#d7e8ee"],sun:[.35,.3,.05,"255,248,225"],ly:["#7f9fb8","#56788f","#34506a"],lake:1,tr:"#1f3b3a",mist:"225,238,244"},
+{n:"Atardecer en el lago",m:1,sky:["#33224f","#b0506a","#f08a5a","#ffd08a"],sun:[.65,.55,.07,"255,222,170"],ly:["#8c4a66","#5c3058","#38213f"],lake:1,tr:"#1a1230",mist:"255,180,140"},
+{n:"Valle con niebla",m:0,sky:["#6d8aa8","#a9bfcf","#e3ebee"],sun:[.3,.35,.05,"255,250,235"],ly:["#9db3c2","#7c97a8","#56768a"],tr:"#2c4a4a",mist:"235,242,246"},
+{n:"Bosque en otoño",m:1,sky:["#5a4a6e","#c9785a","#f3b57a","#fbdca5"],sun:[.7,.5,.07,"255,226,170"],ly:["#a5684f","#7a4a3f","#4d3033"],tr:"#2d1b1b",mist:"255,200,150"},
+{n:"Aurora sobre el lago",m:2,sky:["#030814","#0a2740","#124d55","#2a7a6c"],sun:[.2,.18,.04,"220,240,255"],st:1,au:1,ly:["#17304a","#0f2238","#08131f"],lake:1,tr:"#050b12",mist:"100,200,180"},
+{n:"Montaña al mediodía",m:0,sky:["#2f6fb0","#6aa5d6","#cfe6f5"],sun:[.8,.14,.05,"255,252,235"],ly:["#8fb0c9","#6a8fa8","#456a82"],lake:1,tr:"#1d3d34",mist:"230,242,250"},
+{n:"Crepúsculo violeta",m:2,sky:["#1c1a3f","#5b3a78","#c25f87","#f6a58c"],sun:[.5,.62,.06,"255,210,200"],ly:["#6a4a82","#463066","#2a1d46"],lake:1,tr:"#150f2b",mist:"230,160,190"}
+];
+const TRK=[
+ {l:11000,c:[[60,64,67,71],[57,60,64,67],[57,60,65,69],[55,62,67,71]]},
+ {l:12000,c:[[62,66,69,73],[59,62,66,69],[59,62,67,71],[57,64,69,71]]},
+ {l:12000,c:[[57,60,64,71],[57,60,65,69],[60,64,67,71],[55,62,67,69]]},
+ {l:11500,c:[[57,60,65,69],[58,62,65,69],[55,58,62,65],[55,60,65,67]]},
+ {l:10500,c:[[55,62,66,71],[55,59,62,64],[60,64,67,71],[57,62,64,69]]},
+ {l:12500,c:[[58,63,67,70],[60,63,67,70],[56,60,63,67],[58,62,65,70]]}
+];
+let si=rnd(SCN.length),VW=0,VH=0,sd=1;
+const sr=()=>(sd=sd*16807%2147483647)/2147483647;
+const bgc=$("bg"),fxc=$("fx"),bx=bgc.getContext("2d"),fc=fxc.getContext("2d");
+function drawScene(s){
+ sd=7+(s.sv||0)*3;const W=VW,H=VH,x=bx,wl=H*.8;
+ let g=x.createLinearGradient(0,0,0,H*.8);s.sky.forEach((c,i)=>g.addColorStop(i/(s.sky.length-1),c));x.fillStyle=g;x.fillRect(0,0,W,H);
+ if(s.st)for(let i=0;i<150;i++){x.fillStyle=`rgba(255,255,255,${.25+sr()*.6})`;x.beginPath();x.arc(sr()*W,sr()*H*.55,sr()*1.2+.3,0,7);x.fill()}
+ if(s.au)for(let i=0;i<3;i++){const y0=H*(.16+i*.07);g=x.createLinearGradient(0,y0-H*.1,0,y0+H*.12);g.addColorStop(0,"rgba(80,255,190,0)");g.addColorStop(.5,`rgba(${i?"90,200,255":"80,255,180"},.2)`);g.addColorStop(1,"rgba(80,255,190,0)");x.fillStyle=g;x.beginPath();x.moveTo(0,y0+H*.12);for(let px=0;px<=W;px+=8)x.lineTo(px,y0+Math.sin(px/W*(5+i)+i*2)*H*.04);x.lineTo(W,y0+H*.12);x.closePath();x.fill()}
+ const [sx,sy,sz,sc]=s.sun,cx=sx*W,cy=sy*H,R=sz*Math.min(W,H)*1.6;
+ g=x.createRadialGradient(cx,cy,0,cx,cy,R*6);g.addColorStop(0,`rgba(${sc},.7)`);g.addColorStop(.25,`rgba(${sc},.2)`);g.addColorStop(1,`rgba(${sc},0)`);x.fillStyle=g;x.fillRect(0,0,W,H);
+ x.fillStyle=`rgb(${sc})`;x.beginPath();x.arc(cx,cy,R,0,7);x.fill();
+ for(let i=0;i<7;i++){const a=sr()*W,b=H*(.08+sr()*.32),w=W*(.18+sr()*.3);g=x.createRadialGradient(a,b,0,a,b,w);g.addColorStop(0,`rgba(${s.mist},.2)`);g.addColorStop(1,`rgba(${s.mist},0)`);x.save();x.translate(a,b);x.scale(1,.18);x.translate(-a,-b);x.fillStyle=g;x.fillRect(a-w,b-w,w*2,w*2);x.restore()}
+ s.ly.forEach((c,i)=>{
+  const b=H*(.5+i*.07),a=H*(.07-i*.012),p=sr()*9,q=sr()*9;
+  x.fillStyle=c;x.beginPath();x.moveTo(0,H);
+  for(let px=0;px<=W;px+=6){const u=px/W*6.283;x.lineTo(px,b-a*(Math.sin(u*(1+i*.4)+p)+.55*Math.sin(u*(2.6+i)+q)+.25*Math.sin(u*7+p)))}
+  x.lineTo(W,H);x.fill();
+  g=x.createLinearGradient(0,b-a*2,0,b+H*.12);g.addColorStop(0,`rgba(${s.mist},0)`);g.addColorStop(1,`rgba(${s.mist},.24)`);x.fillStyle=g;x.fillRect(0,b-a*2,W,H*.14+a*2);
+ });
+ if(s.lake){
+  g=x.createLinearGradient(0,wl,0,H);g.addColorStop(0,s.sky[s.sky.length-2]);g.addColorStop(1,s.ly[2]);x.fillStyle=g;x.fillRect(0,wl,W,H-wl);
+  g=x.createLinearGradient(0,wl,0,H);g.addColorStop(0,`rgba(${sc},.55)`);g.addColorStop(1,`rgba(${sc},0)`);x.fillStyle=g;x.beginPath();x.ellipse(cx,wl+(H-wl)*.4,R*1.1,(H-wl)*.6,0,0,7);x.fill();
+  for(let i=0;i<46;i++){x.fillStyle="rgba(255,255,255,.07)";x.fillRect(sr()*W,wl+sr()*(H-wl),20+sr()*70,1.4)}
+ }
+ const pine=(px,by,h)=>{x.beginPath();for(let k=0;k<4;k++){const ty=by-h+k*h*.2,bw=h*(.12+k*.06);x.moveTo(px,ty);x.lineTo(px-bw,ty+h*.32);x.lineTo(px+bw,ty+h*.32)}x.fill()};
+ const by=s.lake?wl+6:H+8;
+ x.globalAlpha=.65;x.fillStyle=s.tr;for(let px=-10;px<W+20;px+=13+sr()*14)pine(px,by-H*.02,H*(.09+sr()*.1));
+ x.globalAlpha=1;for(let px=-10;px<W+20;px+=20+sr()*22)pine(px,by+H*.03,H*(.13+sr()*.15));
+ g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,"rgba(6,8,20,.22)");g.addColorStop(1,"rgba(6,8,20,.34)");x.fillStyle=g;x.fillRect(0,0,W,H);
+}
+function setScene(i,nw){si=i;if(nw)SCN[i].sv=1+rnd(900);drawScene(SCN[i]);document.documentElement.style.setProperty("--c","rgb("+SCN[i].sun[3]+")")}
+function rs(){const d=Math.min(2,devicePixelRatio||1);VW=innerWidth;VH=innerHeight;
+ [bgc,fxc].forEach(c=>{c.width=VW*d;c.height=VH*d});bx.setTransform(d,0,0,d,0,0);fc.setTransform(d,0,0,d,0,0);setScene(si)}
+addEventListener("resize",rs);rs();
+
+/* ---------- audio ---------- */
+let AC,mg,ver=0,mt,tk=rnd(6);
+function ac(){
+ AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();
+ if(!mg){mg=AC.createGain();mg.gain.value=0;
+  const cp=AC.createDynamicsCompressor(),lp=AC.createBiquadFilter(),cv=AC.createConvolver(),wt=AC.createGain(),rt=AC.sampleRate,n=rt*3,buf=AC.createBuffer(2,n,rt);
+  for(let c=0;c<2;c++){const d=buf.getChannelData(c);let q=0;for(let i=0;i<n;i++){q=q*.7+(Math.random()*2-1)*.3;d[i]=q*Math.pow(1-i/n,2.5)}}
+  cv.buffer=buf;wt.gain.value=.5;lp.type="lowpass";lp.frequency.value=3000;lp.Q.value=.3;
+  cp.threshold.value=-24;cp.knee.value=20;cp.ratio.value=4;
+  mg.connect(lp);lp.connect(cp);lp.connect(cv);cv.connect(wt);wt.connect(cp);cp.connect(AC.destination)}
+ return AC;
+}
+function tone(f,d,t="sine",v=.05){
+ if(!SV.o.s)return;
+ try{const a=ac(),o=a.createOscillator(),g=a.createGain();o.type=t;o.frequency.value=f;
+ g.gain.setValueAtTime(v,a.currentTime);g.gain.exponentialRampToValueAtTime(1e-4,a.currentTime+d);
+ o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}
+}
+const mf=m=>440*2**((m-69)/12);
+function pad(m,t,d,v){
+ [-4,4].forEach(dt=>{const o=AC.createOscillator(),g=AC.createGain();o.type="triangle";o.frequency.value=mf(m);o.detune.value=dt;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+d*.4);g.gain.setValueAtTime(v,t+d*.55);g.gain.linearRampToValueAtTime(0,t+d);
+  o.connect(g);g.connect(mg);o.start(t);o.stop(t+d+.1)})
+}
+function pluck(m,t,v){
+ const o=AC.createOscillator(),h=AC.createOscillator(),g=AC.createGain(),g2=AC.createGain();o.frequency.value=mf(m);h.frequency.value=mf(m)*2;g2.gain.value=.15;
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.03);g.gain.exponentialRampToValueAtTime(1e-4,t+3.4);
+ o.connect(g);h.connect(g2);g2.connect(g);g.connect(mg);o.start(t);h.start(t);o.stop(t+3.5);h.stop(t+3.5)
+}
+function mus(){
+ const me=++ver;clearTimeout(mt);
+ if(!SV.o.m){if(mg)mg.gain.setTargetAtTime(0,AC.currentTime,.6);return}
+ try{ac()}catch(e){return}
+ const T=TRK[tk];let i=0;mg.gain.setTargetAtTime(.55,AC.currentTime,3);
+ const step=()=>{if(me!==ver)return;const t=AC.currentTime+.05,c=T.c[i++%T.c.length],L=T.l/1000;
+  c.forEach((m,k)=>pad(m,t,L+4,k?.04:.05));
+  const n=4+rnd(2);let a=rnd(c.length);
+  for(let b=0;b<n;b++){a=Math.max(0,Math.min(c.length-1,a+rnd(3)-1));const o=Math.min(88,c[a]+12*(1+(Math.random()<.25?1:0)));
+   setTimeout(()=>{if(me===ver)pluck(o,AC.currentTime+.02,.045)},1200+b*(L-2)*1000/n+Math.random()*600)}
+  mt=setTimeout(step,T.l)};
+ step();
+}
+document.addEventListener("visibilitychange",()=>{if(!AC)return;if(document.hidden)AC.suspend();else AC.resume()});
+const vib=n=>{if(SV.o.v&&navigator.vibrate)navigator.vibrate(n)};
+const shake=el=>{el.classList.remove("shk");void el.offsetWidth;el.classList.add("shk")};
+
+/* ---------- partículas ---------- */
+let ps=[];
+function burst(x,y,c,n=22){const e=SV.eq.fx,P=["#ff7a8f","#5fe0c8","#ffd36b","#c99bff","#6fb4ff"];
+ for(let i=0;i<n;i++){const a=Math.random()*6.283,s=1.2+Math.random()*4;ps.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,l:1,c:e==="confeti"?P[rnd(5)]:c,r:2+Math.random()*3,g:e==="estrellas"?"✦":e==="corazones"?"♥":"",k:e==="confeti"})}}
+function pop(x,y,t,c){const e=document.createElement("div");e.className="pop";e.textContent=t;e.style.left=x+"px";e.style.top=y+"px";e.style.color=c;document.body.appendChild(e);setTimeout(()=>e.remove(),1000)}
+
+let G=[],W=[],N=10,cfg,els=[],cur=[],start=0,drag=false,done=true,hints=0,secs=0,tick=null,t0=0;
+let score=0,combo=1,maxC=1,last=0,earn=0,sl,ov=$("ov"),bd=$("board");
+
+function loop(){
+ fc.clearRect(0,0,VW,VH);
+ for(let i=ps.length-1;i>=0;i--){const p=ps[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.1;p.vx*=.98;p.l-=.018;
+  if(p.l<=0){ps.splice(i,1);continue}
+  fc.globalAlpha=p.l;fc.fillStyle=p.c;if(p.g){fc.font=(p.r*4+8)+"px sans-serif";fc.fillText(p.g,p.x,p.y)}else if(p.k)fc.fillRect(p.x,p.y,p.r*2,p.r*1.2);else{fc.beginPath();fc.arc(p.x,p.y,p.r*p.l+.5,0,6.283);fc.fill()}}
+ fc.globalAlpha=1;
+ if(!done&&combo>1){const e=performance.now()-last;if(e>CMB){combo=1;upCombo()}else $("cbf").style.width=(1-e/CMB)*100+"%"}
+ requestAnimationFrame(loop)
+}
+loop();
+
+/* ---------- menú ---------- */
+const lvOf=x=>Math.min(100,Math.floor(Math.sqrt(x/40))+1),RK=["Novato","Curioso","Cazador","Rastreador","Veterano","Maestro","Leyenda"];
+function renderMe(){
+ const L=lvOf(SV.xp),a=40*(L-1)**2,b=40*L*L;
+ $("lv").innerHTML=medal(L);$("rk").textContent="Nivel "+L+", "+TIER(L)[0];
+ $("xpb").style.width=Math.min(100,Math.round((SV.xp-a)/(b-a)*100))+"%";$("xpt").textContent=(SV.xp-a)+" / "+(b-a)+" XP";
+ $("co").textContent=SV.coins;$("sk").textContent=SV.streak;
+}
+function mk(box,items,key){
+ box.innerHTML="";
+ Object.keys(items).forEach((k,n)=>{const it=items[k],b=document.createElement("button");
+  b.className="opt"+(st[key]===k?" on":"");b.innerHTML=`<b>${it.n}</b><em>${it.d}</em>`;
+  b.onclick=()=>{st[key]=k;[...box.children].forEach(c=>c.classList.toggle("on",c===b));tone(480+n*70,.07,"triangle")};
+  box.appendChild(b)});
+}
+function ddMake(){
+ const box=$("cats"),b=document.createElement("button"),l=document.createElement("div");b.className="ddb";l.className="ddl";
+ const set=()=>{const c=DB[st.cat];b.style.setProperty("--k",c.k);b.innerHTML=`<i>${Object.keys(DB).indexOf(st.cat)+1}</i><b>${c.n}</b><em>${c.d}</em><u></u>`};
+ let q=0;for(const k in DB){q++;const c=DB[k],o=document.createElement("button");o.className="ddo";o.style.setProperty("--k",c.k);o.innerHTML=`<i>${q}</i><b>${c.n}</b><em>${c.d}</em>`;
+  o.onclick=e=>{e.stopPropagation();st.cat=k;set();box.classList.remove("open");tone(560,.07,"triangle")};l.appendChild(o)}
+ b.onclick=e=>{e.stopPropagation();box.classList.toggle("open");tone(420,.05)};
+ document.addEventListener("click",()=>box.classList.remove("open"));
+ set();box.append(b,l);
+}
+ddMake();mk($("modes"),MODES,"mode");
+const muL=()=>{$("mu").textContent=SV.o.m?"Música":"Sin música"};
+[["t","Cronómetro"],["s","Sonido"],["v","Vibración"],["m","Música"],["r","Contra reloj"]].forEach(([k,n])=>{
+ const b=document.createElement("button");b.className="tg"+(SV.o[k]?" on":"");b.innerHTML="<i></i>"+n;
+ b.onclick=()=>{SV.o[k]=!SV.o[k];b.classList.toggle("on",SV.o[k]);save();tone(600,.06);if(k==="m"){mus();muL()}};$("opts").appendChild(b)});
+$("mu").onclick=()=>{SV.o.m=!SV.o.m;save();mus();muL();[...$("opts").children][3].classList.toggle("on",SV.o.m)};
+muL();
+function show(id){document.querySelectorAll(".scr").forEach(s=>s.classList.toggle("on",s.id===id));scrollTo(0,0)}
+renderMe();
+setTimeout(()=>$("splash").classList.add("rdy"),1800);
+$("splash").onclick=()=>{if(!$("splash").classList.contains("rdy"))return;tone(440,.1,"triangle");mus();show("menu")};
+$("crb").onclick=()=>$("cr").classList.add("on");
+$("crx").onclick=()=>$("cr").classList.remove("on");
+
+/* ---------- generador de tablero ---------- */
+function build(){
+ cfg=MODES[st.mode];N=cfg.s;
+ const all=DB[st.cat].list.filter(w=>{const l=norm(w).length;return l>=4&&l<=cfg.max});
+ let used=ls.get("spdh_used_"+st.cat,[]),fresh=all.filter(w=>!used.includes(norm(w)));
+ if(fresh.length<cfg.w+4){used=[];fresh=all}
+ const cand=shuffle(fresh).slice(0,cfg.w+8).sort((a,b)=>norm(b).length-norm(a).length);
+ G=Array(N*N).fill("");W=[];
+ for(const w of cand){
+  if(W.length>=cfg.w)break;
+  const k=norm(w);
+  for(let t=0;t<400;t++){
+   const d=cfg.dirs[rnd(cfg.dirs.length)],r=rnd(N),c=rnd(N),er=r+d[0]*(k.length-1),ec=c+d[1]*(k.length-1);
+   if(er<0||er>=N||ec<0||ec>=N)continue;
+   let ok=true;const cells=[];
+   for(let i=0;i<k.length;i++){const p=(r+d[0]*i)*N+c+d[1]*i;if(G[p]&&G[p]!==k[i]){ok=false;break}cells.push(p)}
+   if(!ok)continue;
+   cells.forEach((p,i)=>G[p]=k[i]);W.push({d:w,k,cells,found:false});break;
+  }
+ }
+ const pool=W.map(x=>x.k).join("")+"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+ for(let i=0;i<G.length;i++)if(!G[i])G[i]=pool[rnd(pool.length)];
+ ls.set("spdh_used_"+st.cat,used.concat(W.map(x=>x.k)));
+}
+
+/* ---------- partida ---------- */
+function begin(){
+ build();done=false;hints=0;secs=0;score=0;combo=1;maxC=1;last=0;earn=0;clearInterval(tick);
+ fresh();
+ const td=new Date().toLocaleDateString("en-CA");
+ if(SV.last!==td){SV.streak=SV.last===new Date(Date.now()-864e5).toLocaleDateString("en-CA")?SV.streak+1:1;SV.last=td;save()}
+ const c=DB[st.cat];
+ $("gT").textContent=c.n;$("gS").textContent="Modo "+cfg.n+", "+SCN[si].n.toLowerCase();$("cT").style.display=(SV.o.t||SV.o.r)?"":"none";
+ $("tm").textContent="00:00";$("sc").textContent=0;$("cg").textContent=SV.coins;upCombo();
+ bd.innerHTML="";bd.style.gridTemplateColumns=`repeat(${N},1fr)`;bd.style.setProperty("--n",N);
+ ov.setAttribute("viewBox",`0 0 ${N} ${N}`);ov.innerHTML='<line class="sl" x1="0" y1="0" x2="0" y2="0" opacity="0"/>';sl=ov.firstChild;
+ els=G.map(ch=>{const e=document.createElement("div");e.className="c";e.textContent=ch;bd.appendChild(e);return e});
+ const ul=$("wl");ul.innerHTML="";
+ W.sort((a,b)=>a.k.localeCompare(b.k)).forEach(w=>{const li=document.createElement("li");li.textContent=w.d;w.li=li;ul.appendChild(li)});
+ prog();hb();show("game");$("win").classList.remove("on");$("lo").classList.remove("on");tone(392,.08,"triangle");
+ if(SV.o.t||SV.o.r){t0=Date.now();st.lim=SV.o.r?[150,240,360][cfg.i]:0;tick=setInterval(()=>{secs=Math.floor((Date.now()-t0)/1000);if(st.lim){const L=st.lim+5*W.filter(x=>x.found).length-secs;$("tm").textContent=fmt(Math.max(0,L));$("cT").classList.toggle("lo",L<=10);if(L<=0)lose()}else $("tm").textContent=fmt(secs)},250)}
+}
+function prog(){$("pg").textContent=W.filter(w=>w.found).length+" / "+W.length}
+function upCombo(){$("cmb").classList.toggle("on",combo>1);$("cb").textContent="Combo x"+combo;$("cbf").style.width="100%"}
+
+/* ---------- selección ---------- */
+const pos=i=>[i%N+.5,Math.floor(i/N)+.5];
+const setL=(l,p,q)=>{l.setAttribute("x1",p[0]);l.setAttribute("y1",p[1]);l.setAttribute("x2",q[0]);l.setAttribute("y2",q[1])};
+function cellAt(e,clamp){
+ const r=bd.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*N,y=(e.clientY-r.top)/r.height*N;
+ if(!clamp&&(x<0||y<0||x>=N||y>=N))return null;
+ return Math.max(0,Math.min(N-1,Math.floor(y)))*N+Math.max(0,Math.min(N-1,Math.floor(x)));
+}
+function line(a,b){
+ const r0=Math.floor(a/N),c0=a%N,dr=Math.floor(b/N)-r0,dc=b%N-c0;
+ if(!dr&&!dc)return[a];
+ const an=Math.round(Math.atan2(dr,dc)/(Math.PI/4)),d=[Math.round(Math.sin(an*Math.PI/4)),Math.round(Math.cos(an*Math.PI/4))];
+ const len=Math.round((dr*d[0]+dc*d[1])/(d[0]&&d[1]?2:1)),out=[];
+ for(let i=0;i<=len;i++){const r=r0+d[0]*i,c=c0+d[1]*i;if(r<0||r>=N||c<0||c>=N)break;out.push(r*N+c)}
+ return out;
+}
+function paint(a,b){
+ els.forEach(e=>e.classList.remove("sel"));cur=line(a,b);cur.forEach(i=>els[i].classList.add("sel"));
+ setL(sl,pos(cur[0]),pos(cur[cur.length-1]));sl.setAttribute("opacity",".55");
+}
+bd.addEventListener("pointerdown",e=>{if(done)return;const c=cellAt(e);if(c==null)return;e.preventDefault();bd.setPointerCapture(e.pointerId);start=c;drag=true;paint(c,c);tone(380,.04)});
+bd.addEventListener("pointermove",e=>{if(drag)paint(start,cellAt(e,true))});
+function end(){
+ if(!drag)return;drag=false;
+ const s=cur.map(i=>G[i]).join(""),r=[...s].reverse().join(""),w=W.find(x=>!x.found&&(x.k===s||x.k===r));
+ els.forEach(e=>e.classList.remove("sel"));sl.setAttribute("opacity","0");
+ if(w)found(w);else if(cur.length>1){tone(160,.15,"sawtooth",.03);vib(30);shake(bd.parentNode)}
+ cur=[];
+}
+bd.addEventListener("pointerup",end);bd.addEventListener("pointercancel",end);
+
+const NS="http://www.w3.org/2000/svg";
+function capDraw(l,col){
+ const e=SV.eq.cap,p=[pos(cur[0]),pos(cur[cur.length-1])];
+ if(e==="fuego")col=Math.random()<.5?"#ff5a1f":"#ffb020";
+ if(e==="arco")col=`hsl(${rnd(360)} 85% 62%)`;
+ if(e!=="clasico"){const h=document.createElementNS(NS,"line");setL(h,p[0],p[1]);h.setAttribute("class","fl");h.style.stroke=col;h.style.strokeWidth="1.15";h.style.opacity=".22";ov.insertBefore(h,sl)}
+ setL(l,p[0],p[1]);l.setAttribute("class","fl");l.style.stroke=col;ov.insertBefore(l,sl);
+}
+function found(w){
+ w.found=true;const now=performance.now();
+ combo=last&&now-last<CMB?Math.min(5,combo+1):1;last=now;maxC=Math.max(maxC,combo);
+ const pts=w.k.length*10*combo;score+=pts;$("sc").textContent=score;
+ const col=`hsl(${(W.indexOf(w)*47+160)%360} 70% 62%)`,l=document.createElementNS(NS,"line");
+ capDraw(l,col);
+ cur.forEach(i=>{els[i].classList.add("f");els[i].classList.remove("hl")});
+ w.li.classList.add("d");w.li.style.setProperty("--k",col);
+ const r=els[cur[cur.length>>1]].getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+ burst(x,y,col,24);pop(x,y,"+"+pts+(combo>1?"  x"+combo:""),col);
+ const f=SC[Math.min(6,combo+1)];tone(f,.16,"triangle");setTimeout(()=>tone(f*1.5,.2),70);vib(25);
+ upCombo();prog();
+ if(W.every(x=>x.found))win();
+}
+$("hint").onclick=()=>{
+ if(done)return;
+ if(SV.hp<=0){tone(150,.2,"square",.04);vib(40);shake($("hint"));shop();$("shop").classList.add("on");return}
+ const w=shuffle(W.filter(x=>!x.found&&!x.hl))[0];if(!w)return;
+ SV.hp--;save();hints++;w.hl=true;w.cells.forEach(i=>els[i].classList.add("hl"));hb();tone(740,.12,"triangle");
+};
+
+/* ---------- final ---------- */
+function win(){
+ done=true;clearInterval(tick);
+ const tb=SV.o.r?Math.max(0,st.lim+5*cfg.w-secs)*3:SV.o.t?Math.max(0,cfg.w*20-secs):0,pf=hints?0:100;score+=tb+pf;
+ const stars=1+(hints<=1?1:0)+(!hints&&maxC>=3?1:0),L0=lvOf(SV.xp),xp=Math.floor(score/4)+cfg.i*15+10;
+ SV.xp+=xp;const bo=cfg.w*5+stars*10;SV.coins+=bo;earn+=bo;$("cg").textContent=SV.coins;const L1=lvOf(SV.xp);if(L1>L0){const lb=(L1-L0)*50;SV.coins+=lb;earn+=lb}
+ const key=st.cat+"_"+st.mode,b=SV.best[key]||0,rec=score>b;if(rec)SV.best[key]=score;save();
+ $("wS").textContent=score;$("wT").textContent=(SV.o.t||SV.o.r)?fmt(secs):"--";$("wB").textContent=Math.max(b,score);
+ $("wX").textContent="+"+xp+" XP   +"+earn+" monedas"+(pf?"   Sin pistas +100":"");
+ $("wTitle").textContent=rec?"Nuevo récord":["Bien jugado","Excelente","Perfecto"][stars-1];
+ $("wL").textContent=lvOf(SV.xp)>L0?"Subiste al nivel "+lvOf(SV.xp)+", medalla de "+TIER(lvOf(SV.xp))[0].toLowerCase():"";
+ document.querySelectorAll("#stars i").forEach((s,i)=>{s.classList.remove("on");setTimeout(()=>{if(i<stars){s.classList.add("on");tone(SC[i+2],.25,"triangle")}},750+i*320)});
+ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.25,"triangle"),i*130));
+ const r=bd.getBoundingClientRect();
+ for(let i=0;i<4;i++)setTimeout(()=>burst(r.left+Math.random()*r.width,r.top+Math.random()*r.height,["#ffd36b","#5fe0c8","#ff7a8f"][i%3],30),i*200);
+ setTimeout(()=>$("win").classList.add("on"),900);vib([40,60,40]);
+}
+
+/* ---------- tienda y anuncios ---------- */
+const SHOP={
+ cap:[["clasico","Clásico","Un color por palabra",0,1],["neon","Neón","Cápsula con resplandor",150,1],["fuego","Fuego","Naranja ardiente",250,3],["arco","Arcoíris","Un color distinto cada vez",400,5]],
+ fx:[["chispas","Chispas","Partículas básicas",0,1],["confeti","Confeti","Fiesta de colores",150,2],["estrellas","Estrellas","Lluvia de estrellas",250,4],["corazones","Corazones","Con cariño",350,6]]
+};
+function shop(){
+ const box=$("shopL"),L=lvOf(SV.xp);box.innerHTML="";$("shC").textContent=SV.coins;packs(box);
+ [["cap","Marcadores"],["fx","Explosiones"]].forEach(([k,t])=>{
+  const h=document.createElement("h4");h.textContent=t;box.appendChild(h);
+  SHOP[k].forEach(([id,n,d,pr,lv])=>{
+   const own=SV.own[k].includes(id),eq=SV.eq[k]===id,el=document.createElement("button");
+   el.className="si"+(eq?" on":"");
+   el.innerHTML=`<b>${n}</b><em>${d}</em><span>${eq?"Equipado":own?"Equipar":L<lv?"Nivel "+lv:pr+" monedas"}</span>`;
+   el.onclick=()=>{
+    if(own){SV.eq[k]=id;tone(660,.1,"triangle")}
+    else if(L<lv||SV.coins<pr){tone(150,.2,"square",.04);vib(40);shake(el);return}
+    else{SV.coins-=pr;SV.own[k].push(id);SV.eq[k]=id;tone(880,.15,"triangle");burst(innerWidth/2,innerHeight/2,"#ffd36b",26)}
+    save();shop();renderMe();
+   };
+   box.appendChild(el)});
+ });
+}
+$("shopB").onclick=()=>{shop();$("shop").classList.add("on")};
+$("shX").onclick=()=>$("shop").classList.remove("on");
+
+$("play").onclick=begin;$("again").onclick=begin;$("wAgain").onclick=begin;
+const toMenu=()=>{clearInterval(tick);done=true;$("win").classList.remove("on");$("lo").classList.remove("on");renderMe();show("menu")};
+$("back").onclick=toMenu;$("wMenu").onclick=toMenu;
+/* ---------- preguntas ---------- */
+const QB=`¿En qué río fue bautizado Jesús?|Jordán|Nilo|Tigris
+¿Cuál de los discípulos negó a Jesús tres veces?|Pedro|Mateo|Lucas
+¿Cuál es el libro más largo de la Biblia?|Salmos|Génesis|Mateo
+¿Quién construyó el arca según la Biblia?|Noé|Moisés|Abraham
+¿En qué ciudad nació Jesús?|Belén|Nazaret|Jerusalén
+¿Quién derrotó al gigante Goliat?|David|Sansón|Saúl
+¿Cuántos días llovió durante el diluvio, según el Génesis?|40|7|100
+¿Qué profeta fue tragado por un gran pez?|Jonás|Elías|Daniel
+¿Quién fue el primer hombre según la Biblia?|Adán|Noé|Abraham
+¿Cuántos discípulos tenía Jesús?|12|10|7
+¿Qué mar abrió Moisés según el Éxodo?|Mar Rojo|Mar Muerto|Mar Mediterráneo
+¿Cuál es el planeta más grande del sistema solar?|Júpiter|Saturno|Neptuno
+¿Qué gas necesitamos para respirar?|Oxígeno|Nitrógeno|Helio
+¿Cuántos huesos tiene el cuerpo humano adulto?|206|156|306
+¿Cuál es el símbolo químico del oro?|Au|Ag|Or
+¿Qué planeta es conocido como el planeta rojo?|Marte|Venus|Mercurio
+¿Qué órgano bombea la sangre por el cuerpo?|Corazón|Pulmón|Hígado
+¿A cuántos grados Celsius hierve el agua al nivel del mar?|100|90|120
+¿Cuál es el animal terrestre más rápido?|Guepardo|León|Caballo
+¿Qué metal es líquido a temperatura ambiente?|Mercurio|Plomo|Hierro
+¿Cuál es la capital de Colombia?|Bogotá|Medellín|Cali
+¿Cuál es el río más caudaloso del mundo?|Amazonas|Nilo|Misisipi
+¿En qué continente está Egipto?|África|Asia|Europa
+¿Cuál es el océano más grande?|Pacífico|Atlántico|Índico
+¿Cuál es la capital de Japón?|Tokio|Osaka|Kioto
+¿Cuál es el país más grande del mundo por superficie?|Rusia|Canadá|China
+¿En qué país está la Torre Eiffel?|Francia|Italia|España
+¿Cuál es la montaña más alta del mundo?|Everest|K2|Aconcagua
+¿En qué año llegó Colón a América?|1492|1592|1429
+¿Quién fue el primer presidente de Estados Unidos?|George Washington|Abraham Lincoln|Thomas Jefferson
+¿Quién es conocido como «El Libertador» de Colombia?|Simón Bolívar|Francisco de Paula Santander|José de San Martín
+¿En qué año terminó la Segunda Guerra Mundial?|1945|1939|1918
+¿Qué civilización construyó Machu Picchu?|Inca|Maya|Azteca
+¿Qué civilización construyó las pirámides de Giza?|Egipcia|Romana|Griega
+¿Quién pintó la Mona Lisa?|Leonardo da Vinci|Pablo Picasso|Vincent van Gogh
+¿Quién escribió «Cien años de soledad»?|Gabriel García Márquez|Mario Vargas Llosa|Jorge Luis Borges
+¿Quién escribió «Don Quijote de la Mancha»?|Miguel de Cervantes|Lope de Vega|Francisco de Quevedo
+¿Cuántas cuerdas tiene una guitarra clásica?|6|4|8
+¿Cuántos colores tiene el arcoíris?|7|5|9
+¿Qué idioma tiene más hablantes nativos?|Chino mandarín|Inglés|Español
+¿Cuántos jugadores de un equipo hay en la cancha en fútbol?|11|9|13
+¿En qué deporte se encesta un balón en un aro?|Baloncesto|Voleibol|Tenis
+¿Cuál es la moneda de Japón?|Yen|Won|Yuan
+¿Qué instrumento tiene 88 teclas?|Piano|Acordeón|Marimba
+¿Qué país ganó el Mundial de fútbol de 2022?|Argentina|Francia|Brasil
+¿Cuál es el mamífero más grande del mundo?|Ballena azul|Elefante|Jirafa
+¿Cuántas patas tiene una araña?|8|6|10
+¿Qué animal es conocido como el rey de la selva?|León|Tigre|Oso
+¿Qué ave no vuela y vive en la Antártida?|Pingüino|Flamenco|Búho
+¿Qué insecto produce la miel?|Abeja|Avispa|Hormiga
+¿Cuántos días tiene un año bisiesto?|366|365|364
+¿Cuál es el resultado de 12 × 12?|144|124|132
+#m
+¿Quién fue el padre de Isaac?|Abraham|Jacob|Moisés
+¿Cuál es el último libro de la Biblia?|Apocalipsis|Hechos|Judas
+¿Qué apóstol era recaudador de impuestos?|Mateo|Pedro|Juan
+¿Quién interpretó los sueños del faraón en Egipto?|José|Daniel|Moisés
+¿En qué monte recibió Moisés los diez mandamientos?|Sinaí|Carmelo|Olivos
+¿Quién construyó el primer templo de Jerusalén?|Salomón|David|Saúl
+¿Cuál es el hueso más largo del cuerpo humano?|Fémur|Húmero|Tibia
+¿Qué vitamina produce la piel con la luz del sol?|Vitamina D|Vitamina C|Vitamina A
+¿Cuál es el elemento más abundante en el universo?|Hidrógeno|Oxígeno|Carbono
+¿Qué planeta tiene los anillos más visibles?|Saturno|Urano|Marte
+¿Cuál es la velocidad aproximada de la luz?|300.000 km/s|150.000 km/s|30.000 km/s
+¿Quién propuso la teoría de la relatividad?|Albert Einstein|Isaac Newton|Niels Bohr
+¿Cuál es el órgano más grande del cuerpo humano?|La piel|El hígado|El intestino
+¿Qué gas forma la mayor parte de la atmósfera terrestre?|Nitrógeno|Oxígeno|Dióxido de carbono
+¿Cuál es el metal más ligero?|Litio|Aluminio|Hierro
+¿Qué símbolo químico tiene el hierro?|Fe|Hi|Ir
+¿Cuál es la capital de Australia?|Canberra|Sídney|Melbourne
+¿Cuál es el desierto cálido más grande del mundo?|Sahara|Gobi|Kalahari
+¿Qué río atraviesa París?|Sena|Támesis|Rin
+¿Cuál es el país con más habitantes de América Latina?|Brasil|México|Argentina
+¿Cuál es el lago navegable más alto del mundo?|Titicaca|Maracaibo|Nicaragua
+¿Qué cordillera recorre Sudamérica de norte a sur?|Los Andes|Los Alpes|Los Apalaches
+¿Quién fue el primer ser humano en pisar la Luna?|Neil Armstrong|Buzz Aldrin|Yuri Gagarin
+¿En qué año cayó el Muro de Berlín?|1989|1979|1991
+¿Quién fue la primera mujer en ganar un Premio Nobel?|Marie Curie|Rosalind Franklin|Ada Lovelace
+¿Qué imperio tenía por capital Tenochtitlan?|Azteca|Inca|Maya
+¿Quién lideró la independencia de la India con la no violencia?|Mahatma Gandhi|Jawaharlal Nehru|Subhas Chandra Bose
+¿En qué año se hundió el Titanic?|1912|1898|1925
+¿Quién pintó «La noche estrellada»?|Vincent van Gogh|Claude Monet|Salvador Dalí
+¿Quién compuso la «Oda a la Alegría» de la Novena Sinfonía?|Ludwig van Beethoven|Wolfgang Amadeus Mozart|Johann Sebastian Bach
+¿De qué país es originaria la samba?|Brasil|Cuba|México
+¿Qué escritor creó a Sherlock Holmes?|Arthur Conan Doyle|Agatha Christie|Edgar Allan Poe
+¿Cuántos jugadores de un equipo hay en la cancha en baloncesto?|5|6|7
+¿Cada cuántos años se celebran los Juegos Olímpicos de verano?|4|2|3
+¿Qué selección ha ganado más Mundiales de fútbol?|Brasil|Alemania|Argentina
+¿Quién dirigió la película «Titanic» de 1997?|James Cameron|Steven Spielberg|Ridley Scott
+¿Cuál es el ave más grande del mundo?|Avestruz|Cóndor|Albatros
+¿Cuántos corazones tiene un pulpo?|3|2|1
+¿Cuál es el único mamífero capaz de volar?|Murciélago|Ardilla voladora|Colibrí
+¿Cuánto es el 15 % de 200?|30|20|25
+#d
+¿Cuántos libros tiene la Biblia protestante?|66|73|72
+¿Quién fue el sucesor de Moisés al frente de Israel?|Josué|Caleb|Aarón
+¿Qué profeta subió al cielo en un carro de fuego?|Elías|Eliseo|Isaías
+¿Quién fue la madre del profeta Samuel?|Ana|Raquel|Rut
+¿Qué apóstol reemplazó a Judas Iscariote?|Matías|Bernabé|Santiago
+¿Cuál es el número atómico del carbono?|6|8|12
+¿Qué científico descubrió la penicilina?|Alexander Fleming|Louis Pasteur|Robert Koch
+¿Cuál es el hueso más pequeño del cuerpo humano?|Estribo|Martillo|Yunque
+¿Cuál es la luna más grande de Saturno?|Titán|Encélado|Mimas
+¿Cuántos cromosomas tiene una célula humana normal?|46|44|48
+¿Quién formuló las leyes del movimiento planetario?|Johannes Kepler|Galileo Galilei|Nicolás Copérnico
+¿Cuál es la capital de Turquía?|Ankara|Estambul|Esmirna
+¿Cuál es el país más pequeño del mundo?|Ciudad del Vaticano|Mónaco|San Marino
+¿Cuál es el río más largo de Europa?|Volga|Danubio|Rin
+¿Cuál es el punto más profundo de los océanos?|Fosa de las Marianas|Fosa de Java|Fosa de Puerto Rico
+¿Cuál es la capital de Canadá?|Ottawa|Toronto|Vancouver
+¿Cuál es el lago más profundo del mundo?|Baikal|Tanganica|Superior
+¿Cuál es la capital de Nueva Zelanda?|Wellington|Auckland|Christchurch
+¿Qué estrecho separa Europa de África?|Gibraltar|Bósforo|Magallanes
+¿Cuál es la capital de Marruecos?|Rabat|Casablanca|Marrakech
+¿En qué año comenzó la Revolución Francesa?|1789|1776|1804
+¿Quién fue el primer emperador romano?|Augusto|Julio César|Nerón
+¿En qué batalla se selló la independencia de Colombia en 1819?|Boyacá|Ayacucho|Carabobo
+¿Quién fue el último zar de Rusia?|Nicolás II|Alejandro III|Pedro el Grande
+¿Qué pueblo construyó la ciudad de Petra?|Nabateos|Fenicios|Persas
+¿Cuántos años duró la Guerra de los Cien Años?|116|100|99
+¿Quién escribió «El Príncipe»?|Nicolás Maquiavelo|Dante Alighieri|Tomás Moro
+¿Quién pintó «Las Meninas»?|Diego Velázquez|Francisco de Goya|El Greco
+¿Quién escribió «La Odisea»?|Homero|Virgilio|Sófocles
+¿Quién compuso «Las cuatro estaciones»?|Antonio Vivaldi|Johann Sebastian Bach|Claudio Monteverdi
+¿Qué escritor colombiano ganó el Nobel de Literatura en 1982?|Gabriel García Márquez|Álvaro Mutis|Jorge Isaacs
+¿Qué país ganó el primer Mundial de fútbol, en 1930?|Uruguay|Brasil|Argentina
+¿En qué país se celebraron los Juegos Olímpicos de 2016?|Brasil|China|Reino Unido
+¿Cuántos sets debe ganar un hombre en un Grand Slam de tenis?|3|2|5
+¿Cuántos kilómetros tiene una maratón?|42,195|40|45
+¿Cuál es el animal más rápido del mundo en picada?|Halcón peregrino|Guepardo|Águila real
+¿Qué mamífero pone huevos?|Ornitorrinco|Canguro|Murciélago`.split("\n").reduce((o,l)=>{if(l[0]==="#")o.k=l[1];else if(l)o[o.k].push(l.split("|"));return o},{k:"f",f:[],m:[],d:[]});
+/* banco ampliado */
+const bal=pool=>{const G={};shuffle(pool).forEach(q=>{const k=q[4]||"h";(G[k]=G[k]||[]).push(q)});const out=[];while(out.length<10){const ks=Object.keys(G).filter(k=>G[k].length);if(!ks.length)break;shuffle(ks).slice(0,10-out.length).forEach(k=>out.push(G[k].pop()))}return out};
+{
+const add=(lv,q,a,w,g)=>QB[lv].push([q,a,w[0],w[1],g]);
+const oth=(arr,a)=>shuffle(arr.filter(x=>x!==a)).slice(0,2);
+const MN=(lv,q,a)=>{const o=[],u=new Set([a]);for(let d=0;o.length<2&&d<80;d++){const c=a+(d%2?-1:1)*(1+rnd(Math.max(2,Math.ceil(a/8))));if(c>=0&&!u.has(c)){u.add(c);o.push(c)}}for(let k=1;o.length<2;k++)if(!u.has(a+k)){u.add(a+k);o.push(a+k)}add(lv,q,String(a),o.map(String),"mt")};
+for(let a=2;a<=9;a++)for(let b=a;b<=9;b++)MN("f",`¿Cuánto es ${a} × ${b}?`,a*b);
+for(let n=2;n<=12;n++)MN("f",`¿Cuánto es ${n} al cuadrado?`,n*n);
+for(let b=2;b<=9;b++)for(let c=2;c<=9;c++)MN("f",`¿Cuánto es ${b*c} ÷ ${b}?`,c);
+for(let a=11;a<=19;a++)for(let b=3;b<=9;b++)MN("m",`¿Cuánto es ${a} × ${b}?`,a*b);
+for(const p of[10,20,25,50,75])for(const b of[40,60,80,120,200,240,360,400])MN("m",`¿Cuánto es el ${p} % de ${b}?`,p*b/100);
+for(let n=13;n<=20;n++)MN("m",`¿Cuánto es ${n} al cuadrado?`,n*n);
+for(let a=21;a<=29;a++)for(let b=6;b<=9;b++)MN("d",`¿Cuánto es ${a} × ${b}?`,a*b);
+for(let n=21;n<=35;n++)MN("d",`¿Cuánto es ${n} al cuadrado?`,n*n);
+for(let n=3;n<=10;n++)MN("d",`¿Cuánto es ${n} al cubo?`,n*n*n);
+for(let n=13;n<=30;n++)MN("d",`¿Cuál es la raíz cuadrada de ${n*n}?`,n);
+for(const p of[12,15,35,45,65,85])for(const b of[80,120,160,240,320,480])if(p*b%100===0)MN("d",`¿Cuánto es el ${p} % de ${b}?`,p*b/100);
+const CN={a:"América",e:"Europa",s:"Asia",f:"África",o:"Oceanía"};
+const CAP={
+f:"México,Ciudad de México,a;Colombia,Bogotá,a;Argentina,Buenos Aires,a;Chile,Santiago,a;Perú,Lima,a;Brasil,Brasilia,a;Venezuela,Caracas,a;Ecuador,Quito,a;Uruguay,Montevideo,a;Paraguay,Asunción,a;Cuba,La Habana,a;Costa Rica,San José,a;Panamá,Ciudad de Panamá,a;Estados Unidos,Washington D. C.,a;Canadá,Ottawa,a;España,Madrid,e;Francia,París,e;Italia,Roma,e;Alemania,Berlín,e;Reino Unido,Londres,e;Portugal,Lisboa,e;Grecia,Atenas,e;Irlanda,Dublín,e;Suiza,Berna,e;Austria,Viena,e;Suecia,Estocolmo,e;Rusia,Moscú,;Japón,Tokio,s;China,Pekín,s;India,Nueva Delhi,s;Corea del Sur,Seúl,s;Egipto,El Cairo,f;Marruecos,Rabat,f;Kenia,Nairobi,f;Australia,Canberra,o;Nueva Zelanda,Wellington,o",
+m:"Noruega,Oslo,e;Finlandia,Helsinki,e;Dinamarca,Copenhague,e;Polonia,Varsovia,e;Hungría,Budapest,e;Bélgica,Bruselas,e;República Checa,Praga,e;Rumania,Bucarest,e;Ucrania,Kiev,e;Islandia,Reikiavik,e;Croacia,Zagreb,e;Serbia,Belgrado,e;Bulgaria,Sofía,e;Turquía,Ankara,;Tailandia,Bangkok,s;Vietnam,Hanói,s;Indonesia,Yakarta,s;Filipinas,Manila,s;Malasia,Kuala Lumpur,s;Pakistán,Islamabad,s;Irán,Teherán,s;Irak,Bagdad,s;Arabia Saudita,Riad,s;Nepal,Katmandú,s;Bangladés,Daca,s;Mongolia,Ulán Bator,s;Camboya,Nom Pen,s;Argelia,Argel,f;Nigeria,Abuya,f;Etiopía,Adís Abeba,f;Ghana,Acra,f;Senegal,Dakar,f;Libia,Trípoli,f;Angola,Luanda,f;Guatemala,Ciudad de Guatemala,a;Honduras,Tegucigalpa,a;Nicaragua,Managua,a;El Salvador,San Salvador,a;República Dominicana,Santo Domingo,a;Jamaica,Kingston,a;Haití,Puerto Príncipe,a",
+d:"Kazajistán,Astaná,s;Uzbekistán,Taskent,s;Afganistán,Kabul,s;Azerbaiyán,Bakú,s;Armenia,Ereván,s;Georgia,Tiflis,;Myanmar,Naipyidó,s;Laos,Vientián,s;Bután,Timbu,s;Bielorrusia,Minsk,e;Lituania,Vilna,e;Letonia,Riga,e;Estonia,Tallin,e;Eslovaquia,Bratislava,e;Eslovenia,Liubliana,e;Albania,Tirana,e;Macedonia del Norte,Skopie,e;Bosnia y Herzegovina,Sarajevo,e;Moldavia,Chisináu,e;Malta,La Valeta,e;Mali,Bamako,f;Níger,Niamey,f;Chad,Yamena,f;Sudán,Jartum,f;Camerún,Yaundé,f;Zambia,Lusaka,f;Zimbabue,Harare,f;Uganda,Kampala,f;Madagascar,Antananarivo,f;Namibia,Windhoek,f;Botsuana,Gaborone,f;Ruanda,Kigali,f;Somalia,Mogadiscio,f;Papúa Nueva Guinea,Port Moresby,o;Fiyi,Suva,o;Surinam,Paramaribo,a;Guyana,Georgetown,a;Belice,Belmopán,a;Bahamas,Nasáu,a;Trinidad y Tobago,Puerto España,a"};
+for(const lv in CAP){const L=CAP[lv].split(";").map(x=>x.trim().split(",")),cs=L.map(x=>x[1]),ps=L.map(x=>x[0]);
+ L.forEach(([p,c,k])=>{add(lv,`¿Cuál es la capital de ${p}?`,c,oth(cs,c),"cp");add(lv,`¿De qué país es capital ${c}?`,p,oth(ps,p),"cp");
+  if(k&&lv!=="d")add(lv,`¿En qué continente está ${p}?`,CN[k],oth(Object.values(CN),CN[k]),"ct")})}
+const EL={f:"Hidrógeno=H;Oxígeno=O;Carbono=C;Nitrógeno=N;Hierro=Fe;Oro=Au;Plata=Ag;Sodio=Na;Calcio=Ca;Helio=He;Cobre=Cu;Aluminio=Al",
+m:"Potasio=K;Magnesio=Mg;Zinc=Zn;Plomo=Pb;Estaño=Sn;Mercurio=Hg;Azufre=S;Fósforo=P;Cloro=Cl;Neón=Ne;Níquel=Ni;Litio=Li;Silicio=Si;Yodo=I",
+d:"Wolframio=W;Titanio=Ti;Platino=Pt;Uranio=U;Cromo=Cr;Manganeso=Mn;Cobalto=Co;Boro=B;Argón=Ar;Kriptón=Kr;Bario=Ba;Bismuto=Bi;Antimonio=Sb;Radón=Rn"};
+for(const lv in EL){const L=EL[lv].split(";").map(x=>x.split("=")),ns=L.map(x=>x[0]),ss=L.map(x=>x[1]);
+ L.forEach(([n,y])=>{add(lv,`¿Qué símbolo químico tiene el elemento ${n.toLowerCase()}?`,y,oth(ss,y),"el");add(lv,`¿Qué elemento tiene el símbolo químico ${y}?`,n,oth(ns,n),"el")})}
+const BK="Génesis,Éxodo,Levítico,Números,Deuteronomio,Josué,Jueces,Rut,1 Samuel,2 Samuel,1 Reyes,2 Reyes,1 Crónicas,2 Crónicas,Esdras,Nehemías,Ester,Job,Salmos,Proverbios,Eclesiastés,Cantares,Isaías,Jeremías,Lamentaciones,Ezequiel,Daniel,Oseas,Joel,Amós,Abdías,Jonás,Miqueas,Nahúm,Habacuc,Sofonías,Hageo,Zacarías,Malaquías,Mateo,Marcos,Lucas,Juan,Hechos,Romanos,1 Corintios,2 Corintios,Gálatas,Efesios,Filipenses,Colosenses,1 Tesalonicenses,2 Tesalonicenses,1 Timoteo,2 Timoteo,Tito,Filemón,Hebreos,Santiago,1 Pedro,2 Pedro,1 Juan,2 Juan,3 Juan,Judas,Apocalipsis".split(",");
+for(let i=0;i<BK.length-1;i++){if(BK[i].replace(/^\d /,"")===BK[i+1].replace(/^\d /,""))continue;
+ add([0,1,2,3,18,22,39,40,41,42,43].includes(i)?"f":i%2?"d":"m",`¿Qué libro de la Biblia viene después de ${BK[i]}?`,BK[i+1],oth(BK.filter(x=>x!==BK[i]),BK[i+1]),"bk")}
+const TP={a:t=>`¿Quién escribió «${t}»?`,p:t=>`¿Quién pintó «${t}»?`,c:t=>`¿Qué tipo de animal es ${t}?`,m:t=>`¿Cuál es la moneda de ${t}?`,l:t=>`¿Cuál es el idioma oficial de ${t}?`};
+const QD=[
+["f","a","Romeo y Julieta=William Shakespeare;El Principito=Antoine de Saint-Exupéry;Harry Potter y la piedra filosofal=J. K. Rowling;Las aventuras de Tom Sawyer=Mark Twain;Oliver Twist=Charles Dickens;Los tres mosqueteros=Alexandre Dumas;Frankenstein=Mary Shelley;Drácula=Bram Stoker;Alicia en el país de las maravillas=Lewis Carroll;El viejo y el mar=Ernest Hemingway;Pinocho=Carlo Collodi;El Hobbit=J. R. R. Tolkien"],
+["m","a","Crimen y castigo=Fiódor Dostoyevski;La metamorfosis=Franz Kafka;1984=George Orwell;Orgullo y prejuicio=Jane Austen;Los miserables=Victor Hugo;Moby Dick=Herman Melville;La divina comedia=Dante Alighieri;Pedro Páramo=Juan Rulfo;Rayuela=Julio Cortázar;El amor en los tiempos del cólera=Gabriel García Márquez;La casa de los espíritus=Isabel Allende;Fahrenheit 451=Ray Bradbury;Platero y yo=Juan Ramón Jiménez;María=Jorge Isaacs"],
+["d","a","Ulises=James Joyce;En busca del tiempo perdido=Marcel Proust;Guerra y paz=León Tolstói;Madame Bovary=Gustave Flaubert;El Aleph=Jorge Luis Borges;La ciudad y los perros=Mario Vargas Llosa;Los hermanos Karamázov=Fiódor Dostoyevski;El extranjero=Albert Camus;Veinte poemas de amor y una canción desesperada=Pablo Neruda;El túnel=Ernesto Sabato;La vorágine=José Eustasio Rivera;Fortunata y Jacinta=Benito Pérez Galdós;Rimas y leyendas=Gustavo Adolfo Bécquer;La Regenta=Leopoldo Alas «Clarín»"],
+["f","p","Guernica=Pablo Picasso;El grito=Edvard Munch;La última cena=Leonardo da Vinci;Los girasoles=Vincent van Gogh;La persistencia de la memoria=Salvador Dalí"],
+["m","p","El nacimiento de Venus=Sandro Botticelli;La creación de Adán=Miguel Ángel;La joven de la perla=Johannes Vermeer;Impresión, sol naciente=Claude Monet;El beso=Gustav Klimt;Las dos Fridas=Frida Kahlo;La ronda de noche=Rembrandt;El jardín de las delicias=El Bosco"],
+["d","p","El 3 de mayo de 1808 en Madrid=Francisco de Goya;La libertad guiando al pueblo=Eugène Delacroix;Las señoritas de Aviñón=Pablo Picasso;La escuela de Atenas=Rafael;El caminante sobre el mar de nubes=Caspar David Friedrich;American Gothic=Grant Wood;La balsa de la Medusa=Théodore Géricault;El entierro del conde de Orgaz=El Greco"],
+["f","i","¿Quién inventó el teléfono?=Alexander Graham Bell;¿Quién formuló la ley de la gravitación universal?=Isaac Newton;¿Quién propuso la evolución por selección natural?=Charles Darwin;¿Quién inventó la imprenta de tipos móviles en Europa?=Johannes Gutenberg;¿Quién llegó a América en 1492 con tres carabelas?=Cristóbal Colón;¿Quién patentó la bombilla eléctrica comercial?=Thomas Edison;¿Quién desarrolló la primera vacuna contra la viruela?=Edward Jenner;¿Qué hermanos hicieron el primer vuelo en avión motorizado?=Los hermanos Wright"],
+["m","i","¿Quién descubrió la circulación de la sangre?=William Harvey;¿Quién inventó el pararrayos?=Benjamin Franklin;¿Quién inventó la pila eléctrica?=Alessandro Volta;¿Quién desarrolló la vacuna contra la rabia?=Louis Pasteur;¿Quién descubrió los rayos X?=Wilhelm Röntgen;¿Quién inventó el motor diésel?=Rudolf Diesel;¿Quién inventó la dinamita?=Alfred Nobel;¿Quién descubrió el electrón?=J. J. Thomson"],
+["d","i","¿Quién descubrió el neutrón?=James Chadwick;¿Quién propuso en 1913 un modelo atómico con niveles de energía?=Niels Bohr;¿Quién formuló el principio de incertidumbre?=Werner Heisenberg;¿Quién propuso la tabla periódica en 1869?=Dmitri Mendeléyev;¿Quién descubrió el polonio y el radio junto con su esposo?=Marie Curie;¿Quién inventó en 1804 el telar con tarjetas perforadas?=Joseph Marie Jacquard;¿Quién publicó en 1543 el modelo heliocéntrico?=Nicolás Copérnico;¿Quién descubrió en 1610 los cuatro satélites mayores de Júpiter?=Galileo Galilei"],
+["f","y","¿En qué año comenzó la Primera Guerra Mundial?=1914;¿En qué año llegó el ser humano a la Luna?=1969;¿En qué año comenzó la Segunda Guerra Mundial?=1939;¿En qué año se declaró la independencia de Estados Unidos?=1776;¿En qué año se fundó la ONU?=1945;¿En qué año se presentó el primer iPhone?=2007;¿En qué año terminó la Primera Guerra Mundial?=1918;¿En qué año se aprobó la Declaración Universal de Derechos Humanos?=1948"],
+["m","y","¿En qué año comenzó la Revolución rusa?=1917;¿En qué año se lanzó el Sputnik 1?=1957;¿En qué año comenzó la Revolución Mexicana?=1910;¿En qué año se descubrió la penicilina?=1928;¿En qué año se publicó «El origen de las especies»?=1859;¿En qué año se inauguró el Canal de Panamá?=1914;¿En qué año fue el ataque a Pearl Harbor?=1941;¿En qué año llegó Hernán Cortés a Tenochtitlan?=1519;¿En qué año se promulgó la actual Constitución de Colombia?=1991;¿En qué año murió Simón Bolívar?=1830"],
+["d","y","¿En qué año se firmó la Carta Magna?=1215;¿En qué año Lutero publicó sus 95 tesis?=1517;¿En qué año fue la batalla de Waterloo?=1815;¿En qué año fue coronado Carlomagno emperador?=800;¿En qué año cayó Constantinopla en manos otomanas?=1453;¿En qué año se firmó el Tratado de Tordesillas?=1494;¿En qué año se coronó Napoleón emperador?=1804;¿En qué año se promulgó la Constitución de Cádiz?=1812;¿En qué año fue la batalla de Trafalgar?=1805;¿En qué año se firmó la paz de Westfalia?=1648;¿En qué año se celebró el Concilio de Nicea?=325;¿En qué año fue la batalla de Hastings?=1066"],
+["f","c","el delfín=Mamífero;el águila=Ave;la rana=Anfibio;la serpiente=Reptil;el tiburón=Pez;la mariposa=Insecto;la araña=Arácnido;el murciélago=Mamífero;el pingüino=Ave;la tortuga=Reptil;el salmón=Pez;la hormiga=Insecto;el caballo=Mamífero;el loro=Ave;el cocodrilo=Reptil;el sapo=Anfibio;la ballena=Mamífero;el escorpión=Arácnido;la abeja=Insecto;el atún=Pez"],
+["m","c","la salamandra=Anfibio;el caballito de mar=Pez;el ornitorrinco=Mamífero;el kiwi=Ave;el camaleón=Reptil;el cangrejo=Crustáceo;el pulpo=Molusco;la medusa=Cnidario;la garrapata=Arácnido;el escarabajo=Insecto;la anguila=Pez;el avestruz=Ave;el gecko=Reptil;el tritón=Anfibio;el calamar=Molusco;la langosta=Crustáceo"],
+["d","c","el pangolín=Mamífero;el manatí=Mamífero;el dragón de Komodo=Reptil;el axolote=Anfibio;el celacanto=Pez;el quetzal=Ave;el coral=Cnidario;el nautilo=Molusco;la sanguijuela=Anélido;la estrella de mar=Equinodermo"],
+["f","m","Estados Unidos=Dólar;México=Peso mexicano;Brasil=Real;Reino Unido=Libra esterlina;Japón=Yen;Suiza=Franco suizo;Rusia=Rublo;India=Rupia;China=Yuan;Francia=Euro"],
+["m","m","Corea del Sur=Won;Sudáfrica=Rand;Turquía=Lira turca;Suecia=Corona sueca;Noruega=Corona noruega;Polonia=Esloti;Hungría=Forinto;República Checa=Corona checa;Tailandia=Baht;Vietnam=Dong;Indonesia=Rupia indonesia;Perú=Sol;Chile=Peso chileno;Colombia=Peso colombiano;Canadá=Dólar canadiense;Australia=Dólar australiano"],
+["d","m","Guatemala=Quetzal;Honduras=Lempira;Costa Rica=Colón costarricense;Nicaragua=Córdoba;Paraguay=Guaraní;Uruguay=Peso uruguayo;Bolivia=Boliviano;Panamá=Balboa;Israel=Nuevo shéquel;Malasia=Ringgit;Filipinas=Peso filipino;Ucrania=Grivna;Rumania=Leu;Nigeria=Naira;Kenia=Chelín keniano;Venezuela=Bolívar"],
+["f","l","Brasil=Portugués;Francia=Francés;Alemania=Alemán;Italia=Italiano;Japón=Japonés;Rusia=Ruso;Grecia=Griego;Países Bajos=Neerlandés;Turquía=Turco;Polonia=Polaco"],
+["m","l","Hungría=Húngaro;Suecia=Sueco;Dinamarca=Danés;Noruega=Noruego;Vietnam=Vietnamita;Tailandia=Tailandés;Irán=Persa;Israel=Hebreo;Corea del Sur=Coreano;Rumania=Rumano"],
+["d","l","Georgia=Georgiano;Armenia=Armenio;Etiopía=Amárico;Albania=Albanés;Lituania=Lituano;Islandia=Islandés;Bulgaria=Búlgaro;Mongolia=Mongol;Camboya=Jemer;Indonesia=Indonesio"],
+["f","r","¿En qué país está el monte Fuji?=Japón;¿En qué país está el Taj Mahal?=India;¿En qué país está el Coliseo romano?=Italia;¿En qué país están las pirámides de Giza?=Egipto;¿En qué país está la Gran Muralla?=China"],
+["m","r","¿En qué país está Machu Picchu?=Perú;¿En qué país está el Kilimanjaro?=Tanzania;¿En qué país está la Alhambra?=España;¿En qué país está Angkor Wat?=Camboya;¿En qué país está la ciudad de Petra?=Jordania"],
+["d","r","¿En qué país está el monte Elbrús?=Rusia;¿En qué país está Tombuctú?=Mali;¿En qué país está Bagan?=Myanmar;¿En qué país está Samarcanda?=Uzbekistán;¿En qué país está Tikal?=Guatemala;¿En qué país está Persépolis?=Irán"],
+["f","x","¿Qué planeta es el primero desde el Sol?=Mercurio;¿Qué planeta es el segundo desde el Sol?=Venus;¿Qué planeta es el tercero desde el Sol?=Tierra;¿Qué planeta es el cuarto desde el Sol?=Marte;¿Qué planeta es el quinto desde el Sol?=Júpiter;¿Qué planeta es el sexto desde el Sol?=Saturno;¿Qué planeta es el séptimo desde el Sol?=Urano;¿Qué planeta es el octavo desde el Sol?=Neptuno"]
+];
+const pk=(lv,g)=>g==="c"?g+lv:g,PL={};
+QD.forEach(([lv,g,t])=>t.split(";").forEach(e=>(PL[pk(lv,g)]=PL[pk(lv,g)]||new Set()).add(e.split("=")[1].trim())));
+QD.forEach(([lv,g,t])=>t.split(";").forEach(e=>{const[q,a0]=e.split("="),a=a0.trim(),qq=(TP[g]||(x=>x))(q.trim());
+ if(g==="y"){const y=+a,u=new Set([y]),w=[];while(w.length<2){const c=y+(rnd(2)?1:-1)*(y<1000?25:y<1900?12:6)*(1+rnd(4));if(c>0&&!u.has(c)){u.add(c);w.push(c)}}add(lv,qq,a,w.map(String),g)}
+ else add(lv,qq,a,oth([...PL[pk(lv,g)]],a),g)}));
+for(const k of"fmd"){const u=new Set();QB[k]=QB[k].filter(q=>!u.has(q[0])&&u.add(q[0]))}
+}
+let QR=[],qi=0,qok=0,qlock=true,qt=0,qint=null,qk=0,qx=0,q50=false,qlv="f",QP=[];
+function fresh(){let n;do n=rnd(SCN.length);while(n===si);setScene(n,1);tk=(tk+1+rnd(5))%6;mus()}
+function qStart(lv){qlv=lv;
+ fresh();qk++;clearInterval(qint);
+ const ky="spdh_qu_"+qlv;let used=ls.get(ky,[]),pool=QB[qlv].filter(q=>!used.includes(q[0]));
+ if(pool.length<14){used=[];pool=QB[qlv].slice()}
+ QR=bal(pool);QP=shuffle(pool.filter(q=>!QR.includes(q)));ls.set(ky,used.concat(QR.map(q=>q[0])));
+ qi=0;qok=0;$("qr").classList.remove("on");show("quiz");qAsk();
+}
+function qAsk(){
+ const q=QR[qi],o=shuffle([[q[1],1],[q[2],0],[q[3],0]]),box=$("qO");
+ qlock=false;qx=0;q50=false;$("qN").textContent="Pregunta "+(qi+1)+" de 10";qc();
+ $("qF").textContent="";$("qQ").textContent=q[0];box.innerHTML="";
+ o.forEach((x,i)=>{const e=document.createElement("button"),l=document.createElement("i"),t=document.createElement("span");
+  l.textContent="ABC"[i];t.textContent=x[0];e.className="qo";e.append(l,t);e._ok=x[1]===1;e.onclick=()=>qPick(e,e._ok);box.appendChild(e)});
+ qt=performance.now();clearInterval(qint);$("qT").textContent=15;$("qTb").style.width="100%";
+ qint=setInterval(()=>{const l=Math.max(0,15+qx-(performance.now()-qt)/1000);$("qT").textContent=Math.ceil(l);$("qTb").style.width=Math.min(100,l/15*100)+"%";if(l<=0)qPick(null,false)},100);
+}
+function qPick(e,ok){
+ if(qlock)return;qlock=true;clearInterval(qint);const k=qk;
+ [...$("qO").children].forEach(x=>{if(x._ok)x.classList.add("ok")});
+ if(e&&!ok)e.classList.add("no");
+ if(ok){qok++;tone(784,.15,"triangle");setTimeout(()=>tone(1047,.2,"triangle"),90);vib(25)}else{tone(220,.3,"triangle",.04);vib(40)}
+ $("qF").textContent=ok?"¡Correcto!":e?"Incorrecto":"Se acabó el tiempo";$("qF").className="qf "+(ok?"g":"b");qc();
+ setTimeout(()=>{if(k!==qk)return;qi++;qi<10?qAsk():qEnd()},1700);
+}
+function qEnd(){
+ const n=qok,L0=lvOf(SV.xp),xp=n*(6+4*"fmd".indexOf(qlv))+5,co=0,bk="q"+qlv,b=SV.best[bk]||0;
+ SV.xp+=xp;SV.coins+=co;if(n>b)SV.best[bk]=n;save();
+ $("qrT").textContent=n>=9?"Excelente":n>=6?"Muy bien":n>=3?"Buen intento":"Sigue practicando";
+ $("qrS").textContent="Sacaste "+n+" de 10 respuestas correctas";
+ $("qrC").textContent=n;$("qrW").textContent=10-n;$("qrB").textContent=Math.max(b,n);
+ $("qrX").textContent="+"+xp+" XP"+(lvOf(SV.xp)>L0?"   Subiste al nivel "+lvOf(SV.xp):"");
+ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.25,"triangle"),i*130));
+ if(n>=6)burst(innerWidth/2,innerHeight/2,"#ffd36b",40);
+ $("qr").classList.add("on");
+}
+const qMenu=()=>{qk++;qlock=true;clearInterval(qint);$("qr").classList.remove("on");renderMe();show("menu")};
+$("qBack").onclick=qMenu;$("qrM").onclick=qMenu;$("qrA").onclick=()=>qStart(qlv);
+const LV={f:["Fácil","Cultura general para empezar"],m:["Medio","Para quien ya sabe un poco más"],d:["Difícil","Solo para expertos"]};
+$("quizB").onclick=()=>{const b=$("qLv");b.innerHTML="";for(const k in LV){const e=document.createElement("button");e.className="opt";e.innerHTML=`<b>${LV[k][0]}</b><em>${LV[k][1]}, ${QB[k].length} preguntas</em>`;e.onclick=()=>{$("qm").classList.remove("on");qStart(k)};b.appendChild(e)}$("qm").classList.add("on")};
+$("qmX").onclick=()=>$("qm").classList.remove("on");
+const qc=()=>{$("qC").textContent="Correctas: "+qok+"   Monedas: "+SV.coins};
+const spend=n=>{if(qlock||SV.coins<n){tone(150,.2,"square",.04);vib(40);return false}SV.coins-=n;save();qc();return true};
+$("l50").onclick=()=>{if(q50||qlock||!spend(30))return;q50=true;const x=shuffle([...$("qO").children].filter(e=>!e._ok))[0];x.style.visibility="hidden";x.disabled=true};
+$("lT").onclick=()=>{if(qlock||!spend(20))return;qx+=5};
+$("lS").onclick=()=>{if(qlock||!QP.length||!spend(40))return;QR[qi]=QP.shift();qAsk()};
+
+/* ---------- pistas ---------- */
+const hb=()=>{$("hb").textContent=SV.hp};
+const PK=[["1 pista","Te marca dónde está una palabra",100,1],["5 pistas","Ahorras 100 monedas",400,5],["12 pistas","El mejor precio",800,12]];
+function packs(box){
+ const h=document.createElement("h4");h.textContent="Pistas (tienes "+SV.hp+")";box.appendChild(h);
+ PK.forEach(([n,d,pr,c])=>{const el=document.createElement("button");el.className="si";el.innerHTML=`<b>${n}</b><em>${d}</em><span>${pr} monedas</span>`;
+  el.onclick=()=>{if(SV.coins<pr){tone(150,.2,"square",.04);vib(40);shake(el);return}SV.coins-=pr;SV.hp+=c;save();tone(880,.15,"triangle");shop();renderMe();hb();$("cg").textContent=SV.coins};box.appendChild(el)});
+}
+
+/* ---------- legal ---------- */
+const MAIL="desarrolloswebspdh@gmail.com";
+const LG={
+p:["Política de privacidad",`<p>Última actualización: 1 de noviembre de 2026.</p>
+<h4>Quién es el responsable</h4><p>Samuel PDH, desarrollador del juego. Contacto: ${MAIL}.</p>
+<h4>Qué información usamos</h4><p>El juego no pide registro, nombre, correo ni ubicación. Tu progreso (nivel, monedas, pistas, récords, ajustes y preguntas ya vistas) se guarda solo en tu dispositivo, en el almacenamiento local del navegador. No lo recibimos en ningún servidor. Si borras los datos del navegador o de la app, ese progreso se pierde.</p>
+<h4>Anuncios</h4><p>Por ahora el juego no muestra anuncios ni usa servicios de publicidad o de análisis. Si en el futuro se agregan, esta política se actualizará antes y pediremos tu consentimiento donde la ley lo exija.</p>
+<h4>Tipografías</h4><p>Las fuentes se cargan desde Google Fonts, por lo que tu dispositivo se conecta a los servidores de Google y les llega tu dirección IP.</p>
+<h4>Menores de edad</h4><p>El juego no está dirigido a menores de 13 años y no recopilamos datos de menores a sabiendas. Si crees que un menor nos envió información, escríbenos y la eliminaremos.</p>
+<h4>Tus derechos</h4><p>Puedes borrar tus datos locales cuando quieras. Para cualquier duda sobre privacidad escribe a ${MAIL}.</p>
+<h4>Cambios</h4><p>Podemos actualizar esta política. La fecha de arriba indica la última versión.</p>`],
+t:["Términos y condiciones",`<p>Última actualización: 1 de noviembre de 2026.</p>
+<h4>Aceptación</h4><p>Al usar el juego aceptas estos términos. Si no estás de acuerdo, no lo uses.</p>
+<h4>Uso permitido</h4><p>El juego es para uso personal y no comercial. No está permitido copiarlo, redistribuirlo, hacer ingeniería inversa ni alterar los datos guardados para obtener ventajas.</p>
+<h4>Monedas y pistas</h4><p>Las monedas y las pistas son virtuales: las monedas se ganan completando sopas de letras, no tienen valor en dinero, no se pueden canjear ni transferir, y pueden cambiar de precio o reiniciarse con una actualización. Esta versión no incluye compras con dinero real.</p>
+<h4>Contenido</h4><p>Las preguntas son informativas y de entretenimiento. Aunque las revisamos, pueden contener errores; si ves uno, escríbenos. El contenido religioso se incluye como cultura general y sin intención de ofender.</p>
+<h4>Propiedad intelectual</h4><p>El juego, su diseño, los paisajes y la música original pertenecen a Samuel PDH. Las tipografías pertenecen a sus autores y se usan bajo la licencia SIL Open Font License. Todos los derechos reservados.</p>
+<h4>Terceros</h4><p>El juego carga tipografías desde Google Fonts. No somos responsables de las políticas de terceros.</p>
+<h4>Garantía y responsabilidad</h4><p>El juego se ofrece «tal cual», sin garantía de funcionamiento continuo. No respondemos por la pérdida de progreso ni por daños indirectos, en la medida que la ley lo permita.</p>
+<h4>Ley aplicable y contacto</h4><p>Estos términos se rigen por las leyes de Colombia. Contacto: ${MAIL}.</p>`]};
+const lg=k=>{$("lgT").textContent=LG[k][0];$("lgB").innerHTML=LG[k][1];$("lgB").scrollTop=0;$("lg").classList.add("on")};
+$("prB").onclick=()=>lg("p");$("teB").onclick=()=>lg("t");$("lgX").onclick=()=>$("lg").classList.remove("on");
+function lose(){const n=W.filter(x=>x.found).length;done=true;clearInterval(tick);tone(200,.4,"triangle",.05);vib([60,40,60]);$("loS").textContent="Encontraste "+n+" de "+W.length+" palabras";$("lo").classList.add("on")}
+$("loM").onclick=toMenu;$("loA").onclick=begin;
+/* ---------- medallas ---------- */
+function TIER(L){return L<=10?["Bronce","#f6c795","#b8672f","#6b3813","#8a3b2b"]:L<=20?["Plata","#fbfcfd","#aeb7c1","#58626e","#355c92"]:L<=50?["Oro","#fff4b8","#f0b92e","#96620a","#a3303c"]:["Diamante"]}
+function medal(L){
+ const t=TIER(L),f=L>99?14:L>9?18:22;
+ if(t[0]==="Diamante")return `<svg viewBox="0 0 64 72" role="img" aria-label="Medalla de diamante"><defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2fdff"/><stop offset=".5" stop-color="#6fd6ff"/><stop offset="1" stop-color="#2a6be0"/></linearGradient><radialGradient id="dh"><stop offset="0" stop-color="#7fe3ff" stop-opacity=".6"/><stop offset="1" stop-color="#7fe3ff" stop-opacity="0"/></radialGradient></defs><circle cx="32" cy="38" r="33" fill="url(#dh)"/><path d="M17 1h11l6 21H23z" fill="#2a4fb0"/><path d="M47 1H36l-6 21h11z" fill="#3a6fe0"/><path d="M13 33 23 20h18l10 13-19 27z" fill="url(#dg)" stroke="#fff" stroke-opacity=".85" stroke-width="1.3" stroke-linejoin="round"/><path d="M23 20l9 13 9-13M13 33h38M23 33l9 27 9-27" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="1"/><path d="M23 20l9 13 9-13z" fill="#fff" opacity=".5"/><path d="M13 33 23 20l9 13z" fill="#fff" opacity=".22"/><circle cx="32" cy="62" r="9" fill="#12286a" stroke="#bff0ff" stroke-width="1.5"/><text x="32" y="${L>99?65:66}" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="800" font-size="${L>99?9:12}" fill="#fff">${L}</text><path d="M56 8l1.6 4.4L62 14l-4.4 1.6L56 20l-1.6-4.4L50 14l4.4-1.6z" fill="#fff"/><path d="M7 24l1.1 3L11 28l-2.9 1.1L7 32l-1.1-2.9L3 28l2.9-1z" fill="#cdf4ff"/></svg>`;
+ return `<svg viewBox="0 0 64 72" role="img" aria-label="Medalla de ${t[0].toLowerCase()}"><defs><linearGradient id="mg${L}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${t[1]}"/><stop offset=".55" stop-color="${t[2]}"/><stop offset="1" stop-color="${t[3]}"/></linearGradient></defs><path d="M17 1h11l7 27H24z" fill="${t[4]}"/><path d="M47 1H36l-7 27h11z" fill="${t[4]}" opacity=".8"/><circle cx="32" cy="45" r="24" fill="url(#mg${L})" stroke="rgba(0,0,0,.28)"/><circle cx="32" cy="45" r="19" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.6"/><path d="M16 38a17 17 0 0 1 26-9" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2.4" stroke-linecap="round"/><text x="32" y="${45+f*.36}" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="800" font-size="${f}" fill="#fff" stroke="rgba(0,0,0,.4)" stroke-width=".7" paint-order="stroke">${L}</text></svg>`;
+}
+const TIERS=[["Bronce",1,10],["Plata",11,20],["Oro",21,50],["Diamante",51,100]];
+$("lv").onclick=()=>{const L=lvOf(SV.xp),b=$("mdL");b.innerHTML="";
+ TIERS.forEach(([n,a,z])=>{const e=document.createElement("div");e.className="mdr"+(L>=a?(L<=z?" cur":""):" lock");
+  e.innerHTML=`<span>${medal(a)}</span><div><b>${n}</b><em>Niveles ${a} al ${z}${L>=a?"":", bloqueada"}</em></div>`;b.appendChild(e)});
+ $("md").classList.add("on")};
+$("mdX").onclick=()=>$("md").classList.remove("on");
+
+
+
+})();
+</script>
 </body>
 </html>
